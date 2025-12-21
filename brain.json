@@ -1,0 +1,31 @@
+{
+  "config": {
+    "botPosition": "br",
+    "botEffect": "peek",
+    "leadScript": "וואוו התחיל הכיף! בוא נתחיל.\nרגע רגע, אני \"סיקה-Ai\".\nמה השם אחי? וטלפון יעזור לי לשלוח לך מידע זהב שתודה לי בסוף 😉",
+    "qa": [
+      {"q": "סניף", "a": "אנחנו נמצאים ברחוב החרש 12, אשדוד. פתוחים מ-7:00 עד 17:00."},
+      {"q": "טלפון", "a": "המספר של אלי המומחה: 054-452-7513"}
+    ]
+  },
+  "products": [
+    {
+      "id": "1",
+      "name": "Sika TopSeal 107",
+      "brand": "SIKA",
+      "category": "sealing",
+      "marketingDesc": "איטום צמנטי גמיש ואיכותי למקלחות ומרפסות.",
+      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_u2_Yq_y_y_y_y_y_y_y_y_y_y_y_y",
+      "tech": { "coverage": "1.5 ק\"ג/מ\"ר" }
+    },
+    {
+      "id": "2",
+      "name": "Sika Ceram 255",
+      "brand": "SIKA",
+      "category": "glues",
+      "marketingDesc": "דבק גמיש במיוחד C2TE S1 המתאים לכל סוגי האריחים.",
+      "image": "https://gilar.co.il/wp-content/uploads/2020/03/SikaCeram-255-Starflex-LD.png",
+      "tech": { "coverage": "1.2 ק\"ג/מ\"ר" }
+    }
+  ]
+}
