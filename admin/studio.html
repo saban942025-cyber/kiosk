@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sika Studio - ניהול</title>
+    <title>Sika Studio - ניהול המוח</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -12,164 +12,134 @@
         .card { background: #222; border: 1px solid #333; padding: 25px; border-radius: 20px; margin-bottom: 20px; }
         .input-dark { background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; width: 100%; display: block; margin-top: 5px; }
         .label { font-size: 12px; color: #888; font-weight: bold; text-transform: uppercase; margin-top: 15px; display: block; }
-        .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
-        .img-item { height: 80px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; opacity: 0.6; }
-        .img-item:hover, .img-item.selected { opacity: 1; border-color: #FFC500; }
-        .img-item img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body class="max-w-4xl mx-auto">
 
-    <div class="flex justify-between items-center mb-10">
-        <h1 class="text-4xl font-black text-[#FFC500]">Sika Studio 🎛️</h1>
-        <a href="../index.html" target="_blank" class="bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200">פתח קיוסק >></a>
-    </div>
+    <header class="flex justify-between items-center mb-10 border-b border-gray-800 pb-6">
+        <div>
+            <h1 class="text-4xl font-black text-[#FFC500]">Sika Studio 🎛️</h1>
+            <p class="text-gray-400">מחובר למאגר: <span class="text-blue-400">saban942025-cyber.github.io/kiosk</span></p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="downloadBrain()" class="bg-green-600 text-white px-6 py-3 rounded-full font-bold hover:bg-green-500 flex items-center gap-2">
+                <i data-lucide="download"></i> שמור והורד brain.json
+            </button>
+            <a href="../index.html" target="_blank" class="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200">פתח קיוסק >></a>
+        </div>
+    </header>
 
-    <div class="card border-blue-900/50">
-        <h2 class="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2"><i data-lucide="key"></i> הגדרות חיבור (API)</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="label">Google Search API Key</label>
-                <input id="keyGoogle" type="password" class="input-dark" placeholder="AIzaSy...">
-            </div>
-            <div>
-                <label class="label">Search Engine ID (CX)</label>
-                <input id="keyCx" type="text" class="input-dark" placeholder="012345...">
+    <div class="grid grid-cols-2 gap-8">
+        <div class="card border-yellow-600/50 col-span-2">
+            <h2 class="text-xl font-bold mb-6 text-[#FFC500] flex items-center gap-2"><i data-lucide="package-plus"></i> הוספת מוצר למוח</h2>
+            <div class="flex gap-8">
+                <div class="w-1/3">
+                    <label class="label">תמונת מוצר (URL)</label>
+                    <input id="pImg" class="input-dark" placeholder="https://..." onchange="document.getElementById('preview').src = this.value">
+                    <img id="preview" src="https://placehold.co/400?text=Preview" class="w-full h-40 object-contain mt-4 bg-white rounded-lg">
+                </div>
+                <div class="w-2/3">
+                    <label class="label">שם המוצר</label>
+                    <input id="pName" class="input-dark" placeholder="למשל: Sika Ceram 255">
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <div>
+                            <label class="label">מותג</label>
+                            <select id="pBrand" class="input-dark">
+                                <option>SIKA</option>
+                                <option>THERMOKIR</option>
+                                <option>MISTER FIX</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">קטגוריה</label>
+                            <select id="pCat" class="input-dark">
+                                <option value="sealing">איטום</option>
+                                <option value="glues">דבקים</option>
+                                <option value="flooring">ריצוף</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <label class="label">תיאור שיווקי</label>
+                    <textarea id="pDesc" class="input-dark h-24"></textarea>
+                    
+                    <button onclick="addProduct()" class="w-full bg-[#E3000F] text-white py-3 rounded-xl font-bold mt-4 hover:bg-red-600">הוסף למאגר המקומי</button>
+                </div>
             </div>
         </div>
-        <button onclick="saveKeys()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm">שמור מפתחות</button>
-    </div>
 
-    <div class="card border-yellow-600/50">
-        <h2 class="text-xl font-bold mb-6 text-[#FFC500] flex items-center gap-2"><i data-lucide="package-plus"></i> הוספת מוצר חדש</h2>
-        
-        <div class="flex gap-8">
-            <div class="w-1/3">
-                <label class="label">תמונת מוצר</label>
-                <div class="relative group">
-                    <img id="previewImg" src="https://placehold.co/400?text=No+Image" class="w-full h-48 object-contain bg-white rounded-xl mb-2 border border-gray-600">
-                </div>
-                <input id="finalImgUrl" type="hidden">
-            </div>
-
-            <div class="w-2/3">
-                <label class="label">שם המוצר</label>
-                <div class="flex gap-2">
-                    <input id="pName" class="input-dark" placeholder="למשל: Sika Ceram 255">
-                    <button onclick="searchImages()" class="bg-gray-700 text-white px-4 rounded-lg mt-1 whitespace-nowrap"><i data-lucide="search"></i> חפש תמונה</button>
-                </div>
-
-                <div id="googleResults" class="hidden mt-2 p-2 bg-gray-900 rounded-xl">
-                    <div class="text-xs text-green-400 mb-1">תוצאות מגוגל (לחץ לבחירה):</div>
-                    <div class="img-grid" id="imgGrid"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                        <label class="label">מותג</label>
-                        <select id="pBrand" class="input-dark">
-                            <option>SIKA</option>
-                            <option>THERMOKIR</option>
-                            <option>MISTER FIX</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="label">קטגוריה</label>
-                        <select id="pCat" class="input-dark">
-                            <option value="sealing">איטום</option>
-                            <option value="glues">דבקים</option>
-                            <option value="flooring">ריצוף</option>
-                        </select>
-                    </div>
-                </div>
-
-                <label class="label">תיאור שיווקי</label>
-                <textarea id="pDesc" class="input-dark h-24"></textarea>
-
-                <button onclick="saveProduct()" class="w-full bg-[#E3000F] text-white py-4 rounded-xl font-bold text-lg mt-6 hover:bg-red-600 transition shadow-lg">
-                    הוסף לקטלוג
-                </button>
-            </div>
+        <div class="card col-span-2">
+            <h2 class="text-xl font-bold mb-4">מוצרים קיימים במוח (<span id="count">0</span>)</h2>
+            <div id="productsList" class="grid grid-cols-4 gap-4 max-h-96 overflow-y-auto pr-2"></div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
+        let brainData = { config: {}, products: [] };
 
-        // Load Keys
-        window.onload = () => {
-            document.getElementById('keyGoogle').value = localStorage.getItem('saban_google_key') || '';
-            document.getElementById('keyCx').value = localStorage.getItem('saban_google_cx') || '';
-        }
-
-        function saveKeys() {
-            localStorage.setItem('saban_google_key', document.getElementById('keyGoogle').value);
-            localStorage.setItem('saban_google_cx', document.getElementById('keyCx').value);
-            alert("המפתחות נשמרו! כעת ניתן לחפש תמונות.");
-        }
-
-        // Google Image Search Logic
-        async function searchImages() {
-            const query = document.getElementById('pName').value;
-            const apiKey = document.getElementById('keyGoogle').value;
-            const cx = document.getElementById('keyCx').value;
-
-            if(!query) return alert("הזן שם מוצר");
-            if(!apiKey || !cx) return alert("חסרים מפתחות API! הזן אותם למעלה.");
-
-            const btn = event.currentTarget;
-            btn.innerHTML = "...";
-            
+        // טעינה ראשונית של המוח הקיים
+        async function loadBrain() {
             try {
-                const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${apiKey}&searchType=image&num=4`;
-                const res = await fetch(url);
-                const data = await res.json();
-
-                const grid = document.getElementById('imgGrid');
-                grid.innerHTML = "";
-                
-                if(data.items) {
-                    data.items.forEach(item => {
-                        grid.innerHTML += `<div class="img-item" onclick="selectImg('${item.link}', this)"><img src="${item.link}"></div>`;
-                    });
-                    document.getElementById('googleResults').classList.remove('hidden');
-                } else {
-                    alert("לא נמצאו תמונות");
+                const res = await fetch('../brain.json');
+                if(res.ok) {
+                    brainData = await res.json();
+                    renderList();
                 }
-            } catch(e) {
-                console.error(e);
-                alert("שגיאה בחיפוש");
-            }
-            btn.innerHTML = `<i data-lucide="search"></i> חפש תמונה`;
-            lucide.createIcons();
+            } catch(e) { console.log("Starting fresh brain"); }
         }
 
-        function selectImg(url, el) {
-            document.querySelectorAll('.img-item').forEach(i => i.classList.remove('selected'));
-            el.classList.add('selected');
-            document.getElementById('previewImg').src = url;
-            document.getElementById('finalImgUrl').value = url;
-        }
-
-        // Save Product Logic
-        function saveProduct() {
+        function addProduct() {
             const product = {
                 id: Date.now(),
                 name: document.getElementById('pName').value,
                 brand: document.getElementById('pBrand').value,
                 category: document.getElementById('pCat').value,
                 marketingDesc: document.getElementById('pDesc').value,
-                image: document.getElementById('finalImgUrl').value || document.getElementById('previewImg').src
+                image: document.getElementById('pImg').value
             };
-
-            // Save to LocalStorage (Shared with Kiosk)
-            let products = JSON.parse(localStorage.getItem('saban_products')) || [];
-            products.unshift(product); // Add to top
-            localStorage.setItem('saban_products', JSON.stringify(products));
-
-            alert("המוצר נוסף בהצלחה! פתח את הקיוסק לראות.");
-            location.reload();
+            
+            brainData.products.unshift(product);
+            renderList();
+            alert("המוצר נוסף לרשימה! אל תשכח להוריד את הקובץ ולעדכן ב-GitHub.");
+            
+            // Clear fields
+            document.getElementById('pName').value = "";
+            document.getElementById('pDesc').value = "";
+            document.getElementById('pImg').value = "";
         }
+
+        function renderList() {
+            document.getElementById('count').innerText = brainData.products.length;
+            const list = document.getElementById('productsList');
+            list.innerHTML = brainData.products.map((p, i) => `
+                <div class="bg-black p-3 rounded-lg border border-gray-800 relative group">
+                    <img src="${p.image}" class="h-20 w-full object-contain mb-2 bg-white rounded">
+                    <div class="font-bold text-sm truncate">${p.name}</div>
+                    <button onclick="removeProduct(${i})" class="absolute top-2 right-2 bg-red-600 p-1 rounded text-white opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash" size="14"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.removeProduct = (index) => {
+            brainData.products.splice(index, 1);
+            renderList();
+        }
+
+        function downloadBrain() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(brainData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "brain.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            alert("קובץ brain.json ירד למחשב!\nעכשיו גרור אותו לתיקייה ב-GitHub כדי לעדכן את האתר.");
+        }
+
+        loadBrain();
     </script>
 </body>
 </html>
