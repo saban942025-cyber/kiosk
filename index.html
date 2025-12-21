@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saban Pro Kiosk</title>
+    <meta name="description" content="קטלוג מוצרים חכם - ח. סבן">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Heebo', sans-serif; background: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        .sidebar { background: white; height: 100vh; width: 100px; position: fixed; right: 0; top: 0; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 50; }
+        .main-content { margin-right: 100px; padding: 20px; }
+        
+        .nav-btn { width: 60px; height: 60px; border-radius: 16px; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #64748b; transition: 0.3s; cursor: pointer; }
+        .nav-btn.active { background: #111; color: #FFC500; shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .nav-btn:hover:not(.active) { background: #f1f5f9; }
+
+        .product-card { background: white; border-radius: 20px; overflow: hidden; transition: transform 0.3s; border: 1px solid transparent; cursor: pointer; }
+        .product-card:hover { transform: translateY(-5px); border-color: #E3000F; shadow: 0 10px 30px rgba(0,0,0,0.05); }
+
+        /* SIKA AI ROBOT */
+        #sikaBot { position: fixed; bottom: 20px; left: 20px; width: 120px; cursor: pointer; transition: 0.3s; z-index: 100; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); }
+        #sikaBot:hover { transform: scale(1.1); }
+        .bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-20%); background: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #E3000F; opacity: 0; transition: 0.3s; pointer-events: none; width: 200px; font-weight: bold; }
+        .bubble.show { opacity: 1; bottom: 110%; }
+
+        /* MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal.open { display: flex; }
+        .modal-box { background: white; width: 90%; max-width: 1000px; height: 80vh; border-radius: 30px; display: flex; overflow: hidden; }
+        
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="mb-8"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png" class="w-12"></div>
+        <div class="nav-btn active" onclick="setView('catalog')" id="btn-catalog"><i data-lucide="layout-grid"></i><span class="text-[10px] font-bold mt-1">קטלוג</span></div>
+        <div class="nav-btn" onclick="setView('calculator')" id="btn-calculator"><i data-lucide="calculator"></i><span class="text-[10px] font-bold mt-1">מחשבון</span></div>
+    </div>
+
+    <div class="main-content">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-black">Saban Pro Center</h1>
+                <p class="text-gray-400">המרכז המקצועי לקבלן</p>
+            </div>
+            <input type="text" placeholder="חיפוש מוצר..." class="bg-white px-6 py-3 rounded-full shadow-sm w-96 border border-gray-100 focus:border-[#E3000F] outline-none" oninput="filterProducts(this.value)">
+        </div>
+
+        <div id="view-catalog" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-20">
+            </div>
+
+        <div id="view-calculator" class="hidden-section h-[70vh] flex items-center justify-center">
+            <div class="bg-white p-10 rounded-3xl shadow-lg text-center max-w-2xl w-full">
+                <h2 class="text-3xl font-black mb-6">מחשבון חומרים</h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <input id="calcArea" type="number" placeholder="שטח (מ''ר)" class="border p-4 rounded-xl text-lg">
+                    <input id="calcCons" type="number" placeholder="צריכה (ק''ג למ''ר)" class="border p-4 rounded-xl text-lg">
+                </div>
+                <div class="bg-black text-white p-6 rounded-xl text-4xl font-bold mb-4" id="calcRes">0 ק"ג</div>
+                <button onclick="calculate()" class="bg-[#E3000F] text-white w-full py-4 rounded-xl font-bold text-xl">חשב כמות</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="position:fixed; bottom:20px; left:20px; z-index:100;">
+        <div class="bubble" id="botBubble">צריך עזרה? אני כאן!</div>
+        <img src="https://saban-kiosk-core.pages.dev/admin/sika-ai.png" id="sikaBot" onclick="toggleChat()">
+    </div>
+
+    <div id="productModal" class="modal">
+        <div class="modal-box">
+            <div class="w-1/2 bg-gray-50 flex items-center justify-center p-10">
+                <img id="mImg" src="" class="max-w-full max-h-full object-contain mix-blend-multiply">
+            </div>
+            <div class="w-1/2 p-10 flex flex-col relative">
+                <button onclick="closeModal()" class="absolute top-6 left-6 p-2 bg-gray-100 rounded-full"><i data-lucide="x"></i></button>
+                <div id="mBrand" class="text-sm font-bold text-gray-400 mb-2">SIKA</div>
+                <h2 id="mName" class="text-4xl font-black mb-4">שם המוצר</h2>
+                <p id="mDesc" class="text-lg text-gray-600 mb-8 bg-yellow-50 p-4 rounded-xl border-r-4 border-[#E3000F]"></p>
+                <div class="mt-auto">
+                    <button onclick="alert('פנייה נשלחה לאלי!')" class="w-full bg-[#111] text-white py-4 rounded-xl font-bold text-xl flex items-center justify-center gap-2">
+                        <i data-lucide="message-circle"></i> התייעץ עם מומחה
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        // נתונים ראשוניים
+        let products = [
+            { id: 1, name: "Sika TopSeal 107", brand: "SIKA", desc: "איטום צמנטי גמיש ואיכותי למקלחות.", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_u2_Yq_y_y_y_y_y_y_y_y_y_y_y_y" },
+            { id: 2, name: "Sika Ceram 255", brand: "SIKA", desc: "דבק גמיש במיוחד C2TE S1.", image: "https://gilar.co.il/wp-content/uploads/2020/03/SikaCeram-255-Starflex-LD.png" }
+        ];
+
+        // טעינה
+        function init() {
+            // טעינת מוצרים שנשמרו בסטודיו
+            const saved = localStorage.getItem('saban_products');
+            if(saved) {
+                const newProds = JSON.parse(saved);
+                products = [...newProds, ...products]; // הוסף את החדשים לראש הרשימה
+            }
+            renderGrid(products);
+        }
+
+        function renderGrid(list) {
+            const grid = document.getElementById('view-catalog');
+            grid.innerHTML = list.map(p => `
+                <div class="product-card p-4" onclick="openModal(${p.id})">
+                    <div class="h-40 bg-gray-50 rounded-xl mb-4 flex items-center justify-center p-2">
+                        <img src="${p.image}" class="max-h-full max-w-full object-contain mix-blend-multiply">
+                    </div>
+                    <div class="text-xs font-bold text-gray-400">${p.brand}</div>
+                    <div class="font-bold text-lg leading-tight">${p.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // View Logic
+        window.setView = (view) => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-'+view).classList.add('active');
+            
+            document.getElementById('view-catalog').style.display = view === 'catalog' ? 'grid' : 'none';
+            document.getElementById('view-calculator').style.display = view === 'calculator' ? 'flex' : 'none';
+        }
+
+        // Modal Logic
+        window.openModal = (id) => {
+            const p = products.find(x => x.id == id); // Loose equality for string/number ids
+            if(!p) return;
+            document.getElementById('mImg').src = p.image;
+            document.getElementById('mName').innerText = p.name;
+            document.getElementById('mBrand').innerText = p.brand;
+            document.getElementById('mDesc').innerText = p.desc || p.marketingDesc;
+            document.getElementById('productModal').classList.add('open');
+        }
+        window.closeModal = () => document.getElementById('productModal').classList.remove('open');
+
+        // Calc Logic
+        window.calculate = () => {
+            const a = document.getElementById('calcArea').value;
+            const c = document.getElementById('calcCons').value;
+            if(a && c) document.getElementById('calcRes').innerText = (a * c).toFixed(1) + ' ק"ג';
+        }
+
+        // Search
+        window.filterProducts = (val) => {
+            renderGrid(products.filter(p => p.name.toLowerCase().includes(val.toLowerCase())));
+        }
+
+        // Bot Animation
+        setTimeout(() => document.getElementById('botBubble').classList.add('show'), 2000);
+        setTimeout(() => document.getElementById('botBubble').classList.remove('show'), 6000);
+
+        init();
+    </script>
+</body>
+</html>
