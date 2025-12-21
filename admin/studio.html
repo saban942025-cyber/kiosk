@@ -3,161 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sika Studio - Live</title>
+    <title>Saban Studio - Sika AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Heebo', sans-serif; background: #111; color: white; padding: 40px; }
-        .card { background: #222; border: 1px solid #333; padding: 25px; border-radius: 20px; margin-bottom: 20px; }
-        .input-dark { background: #000; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; width: 100%; display: block; margin-top: 5px; }
-        .label { font-size: 12px; color: #888; font-weight: bold; text-transform: uppercase; margin-top: 15px; display: block; }
+        body { font-family: 'Heebo', sans-serif; background: #0f172a; color: white; height: 100vh; overflow: hidden; }
+        .input-dark { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; }
+        .input-dark:focus { border-color: #38bdf8; outline: none; }
+        .magic-btn { background: linear-gradient(135deg, #6366f1, #a855f7); border: none; color: white; font-weight: bold; transition: transform 0.2s; }
+        .magic-btn:hover { transform: scale(1.02); }
+        .magic-btn:active { transform: scale(0.98); }
+        
+        /* Phone Mockup for Eli's App */
+        .phone-mockup {
+            width: 300px; height: 600px; border: 12px solid #111; border-radius: 40px; background: #fff;
+            position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background: #111; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; z-index: 10; }
+        .app-header { background: #E3000F; color: white; padding: 40px 20px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .notification { background: #f3f4f6; border-left: 4px solid #E3000F; padding: 10px; margin: 10px; border-radius: 8px; font-size: 13px; color: #333; animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .img-grid img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
+        .img-grid img:hover, .img-grid img.selected { border-color: #38bdf8; opacity: 0.8; }
     </style>
 </head>
-<body class="max-w-4xl mx-auto">
+<body class="flex">
 
-    <header class="flex justify-between items-center mb-10 border-b border-gray-800 pb-6">
+    <div class="w-80 bg-gray-900 border-l border-gray-800 p-6 flex flex-col gap-6 overflow-y-auto">
         <div>
-            <h1 class="text-4xl font-black text-[#FFC500]">Sika Studio 🎛️</h1>
-            <p class="text-gray-400">מחובר לפרויקט: <span class="text-green-400 font-bold">kiosk-saban94 🔥</span></p>
+            <h1 class="text-2xl font-black text-[#FFC500] mb-2">Sika Studio 🎛️</h1>
+            <p class="text-xs text-gray-400">ניהול חכם עם Gemini 2.0</p>
         </div>
-        <a href="../index.html" target="_blank" class="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200">פתח קיוסק >></a>
-    </header>
 
-    <div class="grid grid-cols-2 gap-8">
-        <div class="card border-yellow-600/50 col-span-2">
-            <h2 class="text-xl font-bold mb-6 text-[#FFC500] flex items-center gap-2"><i data-lucide="cloud-lightning"></i> שידור מוצר לקיוסק</h2>
-            <div class="flex gap-8">
-                <div class="w-1/3">
-                    <label class="label">תמונת מוצר (URL)</label>
-                    <input id="pImg" class="input-dark" placeholder="https://..." onchange="document.getElementById('preview').src = this.value">
-                    <img id="preview" src="https://placehold.co/400?text=Preview" class="w-full h-40 object-contain mt-4 bg-white rounded-lg">
-                </div>
-                <div class="w-2/3">
-                    <label class="label">שם המוצר</label>
-                    <input id="pName" class="input-dark" placeholder="למשל: Sika Ceram 255">
-                    
-                    <div class="grid grid-cols-2 gap-4 mt-2">
-                        <div>
-                            <label class="label">מותג</label>
-                            <select id="pBrand" class="input-dark">
-                                <option>SIKA</option>
-                                <option>THERMOKIR</option>
-                                <option>MISTER FIX</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="label">קטגוריה</label>
-                            <select id="pCat" class="input-dark">
-                                <option value="sealing">איטום</option>
-                                <option value="glues">דבקים</option>
-                                <option value="flooring">ריצוף</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <label class="label">תיאור שיווקי</label>
-                    <textarea id="pDesc" class="input-dark h-24"></textarea>
-                    
-                    <button id="btnSave" class="w-full bg-[#E3000F] text-white py-3 rounded-xl font-bold mt-4 hover:bg-red-600 shadow-[0_0_20px_rgba(227,0,15,0.4)] transition">
-                        שדר מוצר לענן 🚀
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+            <h3 class="font-bold text-blue-400 mb-3 text-sm flex gap-2"><i data-lucide="key"></i> מפתחות חיפוש</h3>
+            <input id="googleKey" type="password" class="input-dark text-xs" placeholder="Google API Key">
+            <input id="googleCx" type="text" class="input-dark text-xs" placeholder="Search Engine ID (CX)">
+            <button onclick="saveKeys()" class="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600 w-full">שמור מפתחות</button>
+        </div>
+
+        <div class="mt-auto">
+            <a href="../index.html" target="_blank" class="flex items-center gap-2 text-gray-400 hover:text-white transition">
+                <i data-lucide="external-link"></i> פתח קיוסק
+            </a>
+        </div>
+    </div>
+
+    <div class="flex-1 p-8 overflow-y-auto flex gap-8">
+        
+        <div class="flex-1 max-w-2xl">
+            <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                <div class="flex gap-2 mb-6">
+                    <input id="aiPrompt" class="input-dark text-lg mb-0" placeholder="הקלד שם מוצר (למשל: סיקה טופסיל 107)...">
+                    <button onclick="runMagic()" class="magic-btn px-6 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="wand-2"></i> Magic Fill
                     </button>
                 </div>
+
+                <div id="imageResults" class="grid grid-cols-4 gap-2 mb-4 hidden"></div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-400">שם מוצר</label>
+                        <input id="pName" class="input-dark">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">מותג</label>
+                        <input id="pBrand" class="input-dark">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-400">קטגוריה</label>
+                        <select id="pCat" class="input-dark">
+                            <option value="sealing">איטום (Sealing)</option>
+                            <option value="glues">דבקים (Glues)</option>
+                            <option value="flooring">ריצוף/בטון (Flooring)</option>
+                            <option value="paint">צבע (Paint)</option>
+                            <option value="tools">כלי עבודה (Tools)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">לינק לתמונה</label>
+                        <input id="pImg" class="input-dark">
+                    </div>
+                </div>
+
+                <label class="text-xs text-gray-400">תיאור שיווקי</label>
+                <textarea id="pDesc" class="input-dark h-20"></textarea>
+
+                <div class="bg-gray-900 p-3 rounded-lg mt-2">
+                    <div class="text-xs text-gray-500 mb-2 font-bold">מפרט טכני (Sika AI)</div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input id="tCov" placeholder="כיסוי" class="input-dark text-xs mb-0">
+                        <input id="tDry" placeholder="ייבוש" class="input-dark text-xs mb-0">
+                        <input id="tThick" placeholder="עובי" class="input-dark text-xs mb-0">
+                    </div>
+                </div>
+
+                <button onclick="saveProduct()" class="w-full bg-[#E3000F] text-white font-bold py-3 rounded-xl mt-6 hover:bg-red-600 transition shadow-lg flex justify-center gap-2">
+                    <i data-lucide="save"></i> שדר לקיוסק ועדכן את אלי
+                </button>
             </div>
         </div>
 
-        <div class="card col-span-2">
-            <h2 class="text-xl font-bold mb-4">מוצרים באוויר (<span id="count">0</span>)</h2>
-            <div id="productsList" class="grid grid-cols-4 gap-4 max-h-96 overflow-y-auto pr-2">
-                <div class="col-span-4 text-center text-gray-500 mt-4">טוען...</div>
+        <div class="w-[300px] flex-shrink-0 flex flex-col items-center">
+            <h3 class="text-gray-400 mb-4 text-sm font-bold">Eli's App Simulation 📱</h3>
+            <div class="phone-mockup">
+                <div class="phone-notch"></div>
+                <div class="app-header">
+                    <span>Saban Manager</span>
+                    <i data-lucide="bell"></i>
+                </div>
+                <div id="appNotifications" class="p-2 overflow-y-auto h-full pb-20 bg-white">
+                    <div class="text-center text-gray-400 text-xs mt-10">אין התראות חדשות</div>
+                </div>
+                <div class="absolute bottom-0 w-full h-16 bg-gray-100 border-t flex justify-around items-center text-gray-400">
+                    <i data-lucide="home" class="text-red-600"></i>
+                    <i data-lucide="box"></i>
+                    <i data-lucide="users"></i>
+                </div>
             </div>
         </div>
+
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { askGeminiAdmin, searchProductImage } from '../gemini-service.js';
 
-        // 🔥 הקונפיגורציה שלך 🔥
+        // Firebase Config (מתוך הזיכרון שלי מהשיחות הקודמות)
         const firebaseConfig = {
             apiKey: "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo",
             authDomain: "kiosk-saban94.firebaseapp.com",
             projectId: "kiosk-saban94",
             storageBucket: "kiosk-saban94.firebasestorage.app",
             messagingSenderId: "305877295234",
-            appId: "1:305877295234:web:388472509b86a7052a949b",
-            measurementId: "G-1LFT3538QN"
+            appId: "1:305877295234:web:388472509b86a7052a949b"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 1. שמירת מוצר לענן
-        document.getElementById('btnSave').addEventListener('click', async () => {
-            const btn = document.getElementById('btnSave');
-            const originalText = btn.innerText;
-            btn.innerText = "משדר...";
-            btn.disabled = true;
+        // טעינת מפתחות שמורים
+        window.onload = () => {
+            document.getElementById('googleKey').value = localStorage.getItem('google_key') || '';
+            document.getElementById('googleCx').value = localStorage.getItem('google_cx') || '';
+            lucide.createIcons();
+        };
+
+        window.saveKeys = () => {
+            localStorage.setItem('google_key', document.getElementById('googleKey').value);
+            localStorage.setItem('google_cx', document.getElementById('googleCx').value);
+            alert('המפתחות נשמרו בדפדפן!');
+        };
+
+        // פונקציית הקסם
+        window.runMagic = async () => {
+            const btn = document.querySelector('.magic-btn');
+            const prompt = document.getElementById('aiPrompt').value;
+            if(!prompt) return alert("כתוב שם מוצר!");
+
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> חושב...`;
             
-            try {
-                await addDoc(collection(db, "products"), {
-                    name: document.getElementById('pName').value,
-                    brand: document.getElementById('pBrand').value,
-                    category: document.getElementById('pCat').value,
-                    marketingDesc: document.getElementById('pDesc').value,
-                    image: document.getElementById('pImg').value,
-                    createdAt: Date.now()
-                });
+            // 1. קריאה ל-Gemini
+            const data = await askGeminiAdmin(prompt);
+            
+            if(data) {
+                document.getElementById('pName').value = data.name;
+                document.getElementById('pBrand').value = data.brand;
+                document.getElementById('pDesc').value = data.marketingDesc;
                 
-                alert("המוצר באוויר! ✅");
-                // נקה שדות
-                document.getElementById('pName').value = "";
-                document.getElementById('pDesc').value = "";
-                document.getElementById('pImg').value = "";
-                document.getElementById('preview').src = "https://placehold.co/400?text=Preview";
+                // בחירת קטגוריה אם יש התאמה
+                const catSelect = document.getElementById('pCat');
+                if(data.category && catSelect.querySelector(`option[value="${data.category}"]`)) {
+                    catSelect.value = data.category;
+                }
+
+                if(data.tech) {
+                    document.getElementById('tCov').value = data.tech.coverage || '';
+                    document.getElementById('tDry').value = data.tech.drying || '';
+                    document.getElementById('tThick').value = data.tech.thickness || '';
+                }
+            }
+
+            // 2. חיפוש תמונות
+            const gKey = document.getElementById('googleKey').value;
+            const gCx = document.getElementById('googleCx').value;
+            
+            if(gKey && gCx) {
+                const images = await searchProductImage(prompt, gKey, gCx);
+                const imgDiv = document.getElementById('imageResults');
+                imgDiv.innerHTML = '';
+                imgDiv.classList.remove('hidden');
+                
+                images.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.onclick = () => {
+                        document.querySelectorAll('.img-grid img').forEach(i => i.classList.remove('selected'));
+                        img.classList.add('selected');
+                        document.getElementById('pImg').value = url;
+                    };
+                    imgDiv.appendChild(img);
+                });
+            }
+
+            btn.innerHTML = `<i data-lucide="wand-2"></i> Magic Fill`;
+            lucide.createIcons();
+        };
+
+        // שמירה ל-Firebase ועדכון "האפליקציה"
+        window.saveProduct = async () => {
+            const product = {
+                name: document.getElementById('pName').value,
+                brand: document.getElementById('pBrand').value,
+                category: document.getElementById('pCat').value,
+                marketingDesc: document.getElementById('pDesc').value,
+                image: document.getElementById('pImg').value,
+                tech: {
+                    coverage: document.getElementById('tCov').value,
+                    drying: document.getElementById('tDry').value,
+                    thickness: document.getElementById('tThick').value
+                },
+                createdAt: Date.now()
+            };
+
+            try {
+                await addDoc(collection(db, "products"), product);
+                
+                // ניקוי טופס
+                document.getElementById('aiPrompt').value = '';
+                document.getElementById('pName').value = '';
+                document.getElementById('imageResults').classList.add('hidden');
+                alert("המוצר שודר בהצלחה! 🚀");
                 
             } catch (e) {
-                console.error("Error adding document: ", e);
-                alert("שגיאה בשידור: " + e.message);
+                alert("שגיאה: " + e.message);
             }
-            btn.innerText = originalText;
-            btn.disabled = false;
-        });
+        };
 
-        // 2. האזנה לרשימה קיימת (ומחיקה)
-        onSnapshot(collection(db, "products"), (snapshot) => {
-            const list = document.getElementById('productsList');
-            document.getElementById('count').innerText = snapshot.size;
+        // האזנה למוצרים חדשים (בשביל הסימולציה של האפליקציה)
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(5));
+        onSnapshot(q, (snapshot) => {
+            const container = document.getElementById('appNotifications');
+            container.innerHTML = ''; // ריקון
             
-            list.innerHTML = "";
-            
-            if(snapshot.size === 0) {
-                list.innerHTML = '<div class="col-span-4 text-center text-gray-500">המאגר ריק.</div>';
-                return;
-            }
-
-            snapshot.forEach((docSnap) => {
-                const p = docSnap.data();
-                const id = docSnap.id;
-                
+            snapshot.forEach((doc) => {
+                const p = doc.data();
                 const div = document.createElement('div');
-                div.className = "bg-black p-3 rounded-lg border border-gray-800 relative group";
+                div.className = "notification";
                 div.innerHTML = `
-                    <img src="${p.image}" class="h-20 w-full object-contain mb-2 bg-white rounded" onerror="this.src='https://placehold.co/400'">
-                    <div class="font-bold text-sm truncate" title="${p.name}">${p.name}</div>
-                    <button class="absolute top-2 right-2 bg-red-600 p-1 rounded text-white opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash" size="14"></i></button>
+                    <div class="font-bold flex justify-between">
+                        <span>מוצר חדש במלאי</span>
+                        <span class="text-[10px] text-gray-500">עכשיו</span>
+                    </div>
+                    <div class="mt-1">${p.name}</div>
+                    <div class="text-[10px] text-gray-500 mt-1">נוסף לקטלוג הראשי</div>
                 `;
-                
-                // הוספת אירוע מחיקה
-                div.querySelector('button').addEventListener('click', async () => {
-                    if(confirm("למחוק את " + p.name + " מהענן?")) {
-                        await deleteDoc(doc(db, "products", id));
-                    }
-                });
-                
-                list.appendChild(div);
+                container.appendChild(div);
             });
-            lucide.createIcons();
         });
 
     </script>
