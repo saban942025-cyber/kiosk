@@ -1,31 +1,26 @@
-// gemini-service.js
+// מפתח ה-AI שלך
+const GEMINI_API_KEY = "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug"; 
 
-// הגדרות קבועות
-const GEMINI_API_KEY = "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug"; // המפתח שלך ל-Gemini
-
-/**
- * פונקציה ראשית: יצירת תוכן שיווקי וטכני למוצר
- */
 export async function askGeminiAdmin(productName) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
     
     const prompt = `
-    תפקידך: מנהל שיווק ומומחה טכני של חנות חומרי בניין (ח. סבן).
+    אתה מומחה שיווק של "ח. סבן".
     מוצר: "${productName}"
     
-    עליך להחזיר JSON בלבד (ללא טקסט נוסף, ללא Markdown) עם המבנה הבא בעברית:
+    החזר JSON בלבד (ללא מרכאות מסביב ל-JSON וללא Markdown) עם המבנה הבא בעברית:
     {
-        "name": "שם מוצר מלא (כולל דגם)",
-        "brand": "שם המותג (באנגלית אם זה בינלאומי, או עברית)",
-        "marketingDesc": "פסקה שיווקית קצרה ומשכנעת (עד 2 משפטים) שמדגישה למה כדאי לקנות את זה.",
-        "category": "קטגוריה מתאימה באנגלית מתוך הרשימה: sealing, glues, flooring, paint, tools",
+        "brand": "שם המותג (באנגלית או עברית)",
+        "marketingDesc": "תיאור שיווקי קצר ומשכנע (עד 25 מילים) לקבלן",
+        "ctaText": "כפתור הנעה לפעולה (למשל: הוסף להצעת מחיר)",
+        "standard": "תקן רלוונטי (או 'לא צוין')",
         "tech": {
-            "coverage": "כמות למ''ר (למשל: 5 ק''ג למ''ר) או 'לא רלוונטי'",
-            "drying": "זמן ייבוש (למשל: 24 שעות) או 'מיידי'",
-            "thickness": "עובי יישום או 'לא רלוונטי'"
-        }
-    }
-    `;
+            "coverage": "כמות למ''ר (למשל: 1.5 ק''ג למ''ר)",
+            "drying": "זמן ייבוש",
+            "thickness": "עובי יישום"
+        },
+        "specs": ["תכונה 1", "תכונה 2", "תכונה 3"]
+    }`;
 
     try {
         const response = await fetch(url, {
@@ -36,40 +31,31 @@ export async function askGeminiAdmin(productName) {
 
         const data = await response.json();
         let text = data.candidates[0].content.parts[0].text;
-        // ניקוי תווים מיותרים אם הג'ימני מחזיר Markdown
+        // ניקוי הקוד שהמודל לפעמים מוסיף
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(text);
     } catch (error) {
         console.error("Gemini Error:", error);
-        alert("שגיאה ביצירת תוכן AI. בדוק את הקונסול.");
         return null;
     }
 }
 
-/**
- * פונקציה לחיפוש תמונות בגוגל
- * דורשת מפתח API ו-CX (מזהה מנוע חיפוש) שיוזנו בסטודיו
- */
-export async function searchProductImage(query, googleKey, cx) {
-    if (!googleKey || !cx) {
-        alert("חסרים מפתחות חיפוש (Google API + CX)! הזן אותם בהגדרות בצד.");
-        return [];
-    }
-
-    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${googleKey}&searchType=image&num=4&imgSize=large`;
+export async function askProductExpert(currentProduct, question, history) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+    
+    const context = `אתה המומחה הטכני של ח. סבן.
+    המוצר הנוכחי שהלקוח מסתכל עליו: ${currentProduct ? currentProduct.name : 'כללי'}.
+    פרטים טכניים: ${currentProduct ? JSON.stringify(currentProduct.tech) : ''}.
+    שאלה: ${question}
+    ענה בעברית קצרה ומקצועית.`;
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
+        });
         const data = await response.json();
-        
-        if (data.items) {
-            return data.items.map(item => item.link); // מחזיר מערך של לינקים לתמונות
-        } else {
-            console.warn("No images found", data);
-            return [];
-        }
-    } catch (error) {
-        console.error("Google Search Error:", error);
-        return [];
-    }
+        return data.candidates[0].content.parts[0].text;
+    } catch (e) { return "יש עומס על המערכת, נסה שוב."; }
 }
