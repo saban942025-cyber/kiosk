@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saban Pro Kiosk</title>
-    <meta name="description" content="קטלוג מוצרים חכם - ח. סבן">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Heebo', sans-serif; background: #f8fafc; color: #1e293b; overflow-x: hidden; }
         .sidebar { background: white; height: 100vh; width: 100px; position: fixed; right: 0; top: 0; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; z-index: 50; }
@@ -16,10 +16,6 @@
         .nav-btn.active { background: #111; color: #FFC500; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .product-card { background: white; border-radius: 20px; overflow: hidden; transition: transform 0.3s; border: 1px solid transparent; cursor: pointer; }
         .product-card:hover { transform: translateY(-5px); border-color: #E3000F; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        #sikaBot { position: fixed; bottom: 20px; left: 20px; width: 120px; cursor: pointer; transition: 0.3s; z-index: 100; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); }
-        #sikaBot:hover { transform: scale(1.1); }
-        .bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-20%); background: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #E3000F; opacity: 0; transition: 0.3s; pointer-events: none; width: 200px; font-weight: bold; }
-        .bubble.show { opacity: 1; bottom: 110%; }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal.open { display: flex; }
         .modal-box { background: white; width: 90%; max-width: 1000px; height: 80vh; border-radius: 30px; display: flex; overflow: hidden; }
@@ -27,6 +23,7 @@
     </style>
 </head>
 <body>
+
     <div class="sidebar">
         <div class="mb-8"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png" class="w-12"></div>
         <div class="nav-btn active" onclick="setView('catalog')" id="btn-catalog"><i data-lucide="layout-grid"></i><span class="text-[10px] font-bold mt-1">קטלוג</span></div>
@@ -37,13 +34,20 @@
         <div class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-4xl font-black">Saban Pro Center</h1>
-                <p class="text-gray-400">המרכז המקצועי לקבלן</p>
+                <p class="text-gray-400">המרכז המקצועי לקבלן (מחובר ל-kiosk-saban94 🔥)</p>
             </div>
             <input type="text" placeholder="חיפוש מוצר..." class="bg-white px-6 py-3 rounded-full shadow-sm w-96 border border-gray-100 focus:border-[#E3000F] outline-none" oninput="filterProducts(this.value)">
         </div>
-        <div id="view-catalog" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-20"></div>
+
+        <div id="view-catalog" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-20">
+            <div class="col-span-full text-center text-gray-400 mt-20 flex flex-col items-center">
+                <i data-lucide="loader-2" class="animate-spin mb-2"></i>
+                טוען נתונים מהענן בזמן אמת...
+            </div>
+        </div>
+        
         <div id="view-calculator" class="hidden-section h-[70vh] flex items-center justify-center">
-            <div class="bg-white p-10 rounded-3xl shadow-lg text-center max-w-2xl w-full">
+             <div class="bg-white p-10 rounded-3xl shadow-lg text-center max-w-2xl w-full">
                 <h2 class="text-3xl font-black mb-6">מחשבון חומרים</h2>
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <input id="calcArea" type="number" placeholder="שטח (מ''ר)" class="border p-4 rounded-xl text-lg">
@@ -53,11 +57,6 @@
                 <button onclick="calculate()" class="bg-[#E3000F] text-white w-full py-4 rounded-xl font-bold text-xl">חשב כמות</button>
             </div>
         </div>
-    </div>
-
-    <div style="position:fixed; bottom:20px; left:20px; z-index:100;">
-        <div class="bubble" id="botBubble">טוען את המוח...</div>
-        <img src="https://saban-kiosk-core.pages.dev/admin/sika-ai.png" id="sikaBot" onclick="toggleChat()">
     </div>
 
     <div id="productModal" class="modal">
@@ -79,77 +78,89 @@
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-        let products = [];
-        let config = {};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // טעינת הנתונים מ-Github (המוח)
-        async function init() {
-            try {
-                // נסה לטעון מהקובץ החי
-                const response = await fetch('./brain.json');
-                if (!response.ok) throw new Error("Brain not found");
-                const data = await response.json();
-                
-                products = data.products || [];
-                config = data.config || {};
-                
-                renderGrid(products);
-                document.getElementById('botBubble').innerText = "אני מחובר ומוכן!";
-                setTimeout(() => document.getElementById('botBubble').classList.add('show'), 1000);
-                setTimeout(() => document.getElementById('botBubble').classList.remove('show'), 4000);
-            } catch (e) {
-                console.error("Error loading brain:", e);
-                document.getElementById('botBubble').innerText = "שגיאה בטעינת המוח";
-                // Fallback למוצרים בסיסיים אם יש בעיה
-                products = [{ id: 1, name: "Sika TopSeal 107 (Offline)", brand: "SIKA", image: "https://placehold.co/400" }];
-                renderGrid(products);
-            }
-        }
+        // 🔥 הקונפיגורציה שלך 🔥
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo",
+            authDomain: "kiosk-saban94.firebaseapp.com",
+            projectId: "kiosk-saban94",
+            storageBucket: "kiosk-saban94.firebasestorage.app",
+            messagingSenderId: "305877295234",
+            appId: "1:305877295234:web:388472509b86a7052a949b",
+            measurementId: "G-1LFT3538QN"
+        };
 
-        function renderGrid(list) {
+        // אתחול
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let allProducts = [];
+
+        // האזנה (Listener) לשינויים ב-Database
+        // בכל פעם שמישהו מוסיף מוצר בסטודיו - זה מתעדכן פה לבד!
+        onSnapshot(collection(db, "products"), (snapshot) => {
+            allProducts = [];
+            snapshot.forEach((doc) => {
+                allProducts.push({ id: doc.id, ...doc.data() });
+            });
+            // מיון לפי תאריך הוספה (חדש למעלה)
+            allProducts.sort((a, b) => b.createdAt - a.createdAt);
+            
+            console.log("Products loaded from Firebase:", allProducts.length);
+            window.renderGrid(allProducts);
+        });
+
+        // פונקציות לתצוגה
+        window.renderGrid = (list) => {
             const grid = document.getElementById('view-catalog');
+            if(list.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-xl mt-10">המאגר ריק כרגע... כנס לסטודיו להוסיף מוצרים!</div>';
+                return;
+            }
             grid.innerHTML = list.map(p => `
                 <div class="product-card p-4" onclick="openModal('${p.id}')">
                     <div class="h-40 bg-gray-50 rounded-xl mb-4 flex items-center justify-center p-2">
-                        <img src="${p.image}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.src='https://placehold.co/400'">
+                        <img src="${p.image}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.src='https://placehold.co/400?text=No+Image'">
                     </div>
                     <div class="text-xs font-bold text-gray-400">${p.brand}</div>
                     <div class="font-bold text-lg leading-tight">${p.name}</div>
                 </div>
             `).join('');
+            lucide.createIcons();
         }
 
+        window.openModal = (id) => {
+            const p = allProducts.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('mImg').src = p.image;
+            document.getElementById('mName').innerText = p.name;
+            document.getElementById('mBrand').innerText = p.brand;
+            document.getElementById('mDesc').innerText = p.marketingDesc;
+            document.getElementById('productModal').classList.add('open');
+        }
+
+        window.filterProducts = (val) => {
+            window.renderGrid(allProducts.filter(p => p.name.toLowerCase().includes(val.toLowerCase())));
+        }
+    </script>
+
+    <script>
+        lucide.createIcons();
         window.setView = (view) => {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('btn-'+view).classList.add('active');
             document.getElementById('view-catalog').style.display = view === 'catalog' ? 'grid' : 'none';
             document.getElementById('view-calculator').style.display = view === 'calculator' ? 'flex' : 'none';
         }
-
-        window.openModal = (id) => {
-            const p = products.find(x => x.id == id);
-            if(!p) return;
-            document.getElementById('mImg').src = p.image;
-            document.getElementById('mName').innerText = p.name;
-            document.getElementById('mBrand').innerText = p.brand;
-            document.getElementById('mDesc').innerText = p.marketingDesc || p.desc;
-            document.getElementById('productModal').classList.add('open');
-        }
         window.closeModal = () => document.getElementById('productModal').classList.remove('open');
-
         window.calculate = () => {
             const a = document.getElementById('calcArea').value;
             const c = document.getElementById('calcCons').value;
             if(a && c) document.getElementById('calcRes').innerText = (a * c).toFixed(1) + ' ק"ג';
         }
-
-        window.filterProducts = (val) => {
-            renderGrid(products.filter(p => p.name.toLowerCase().includes(val.toLowerCase())));
-        }
-
-        init();
     </script>
 </body>
 </html>
