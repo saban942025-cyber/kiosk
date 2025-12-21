@@ -3,36 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saban Pro Kiosk</title>
+    <title>Sika-Ai Kiosk</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Heebo', sans-serif; background: #f8fafc; color: #1e293b; overflow-x: hidden; }
-        .product-card { background: white; border-radius: 20px; overflow: hidden; transition: transform 0.3s; border: 1px solid transparent; cursor: pointer; height: 320px; display: flex; flex-direction: column; }
-        .product-card:hover { transform: translateY(-5px); border-color: #E3000F; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        :root { --brand: #E3000F; }
+        body { font-family: 'Heebo', sans-serif; background: #f8fafc; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 100px; background: white; height: 100vh; display: flex; flex-direction: column; align-items: center; padding-top: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 50; }
+        .nav-item { width: 60px; height: 60px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; margin-bottom: 10px; transition: 0.3s; cursor: pointer; }
+        .nav-item.active { background: #111; color: #FFC500; transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        /* Product Card */
+        .card { background: white; border-radius: 20px; overflow: hidden; transition: 0.3s; border: 1px solid transparent; height: 340px; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); border-color: var(--brand); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        /* Robot */
+        #sikaRobot { position: fixed; bottom: -10px; left: 20px; width: 140px; transition: 0.3s; cursor: pointer; z-index: 100; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3)); }
+        #sikaRobot:hover { transform: scale(1.05) translateY(-5px); }
+        .bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-20%); background: white; padding: 12px 20px; border-radius: 20px; border-bottom-left-radius: 0; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-weight: bold; width: max-content; opacity: 0; transition: 0.5s; pointer-events: none; }
+        .bubble.show { opacity: 1; bottom: 120%; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
     </style>
 </head>
-<body>
-    <div class="flex h-screen">
-        <div class="w-24 bg-white border-l flex flex-col items-center py-6 shadow-lg z-10">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png" class="w-12 mb-8">
-            <div class="p-4 bg-black text-[#FFC500] rounded-xl mb-4"><i data-lucide="layout-grid"></i></div>
-            <div class="p-4 text-gray-400 hover:bg-gray-100 rounded-xl transition"><i data-lucide="calculator"></i></div>
+<body class="flex">
+
+    <div class="sidebar">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png" class="w-12 mb-8">
+        <div class="nav-item active" onclick="switchView('catalog')" id="btn-catalog"><i data-lucide="layout-grid"></i><span class="text-[10px] font-bold mt-1">קטלוג</span></div>
+        <div class="nav-item" onclick="switchView('calculator')" id="btn-calculator"><i data-lucide="calculator"></i><span class="text-[10px] font-bold mt-1">מחשבון</span></div>
+    </div>
+
+    <div class="flex-1 flex flex-col h-screen p-8 relative">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-black flex items-center gap-2">Sika-Ai <span class="text-[#E3000F] text-lg bg-black px-2 py-1 rounded">PRO</span></h1>
+                <p class="text-gray-400">המרכז המקצועי לקבלן (מחובר לענן 🔥)</p>
+            </div>
+            <input type="text" id="search" placeholder="חיפוש חכם..." class="bg-white px-6 py-3 rounded-full shadow-sm w-96 border focus:border-[#E3000F] outline-none" oninput="renderGrid()">
+        </header>
+
+        <div id="view-catalog" class="flex-1 overflow-y-auto pb-20 grid grid-cols-2 md:grid-cols-4 gap-6 content-start">
+            <div class="col-span-full text-center mt-20 text-gray-400"><i data-lucide="loader-2" class="animate-spin inline mr-2"></i> טוען נתונים...</div>
         </div>
 
-        <div class="flex-1 p-8 overflow-hidden flex flex-col">
-            <header class="flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-4xl font-black">המרכז המקצועי</h1>
-                    <p class="text-gray-500">מחובר למאגר: <span class="text-green-600 font-bold">Saban-94 🔥</span></p>
+        <div id="view-calculator" class="hidden flex-1 items-center justify-center">
+            <div class="bg-white p-10 rounded-3xl shadow-lg w-full max-w-2xl text-center">
+                <h2 class="text-3xl font-black mb-6">מחשבון חומרים</h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <input id="calcArea" type="number" placeholder="שטח (מ''ר)" class="border p-4 rounded-xl text-lg">
+                    <input id="calcCons" type="number" placeholder="צריכה (ק''ג למ''ר)" class="border p-4 rounded-xl text-lg">
                 </div>
-                <input type="text" id="searchInput" placeholder="חיפוש מוצר..." class="bg-white px-6 py-3 rounded-full shadow-sm w-96 border focus:border-[#E3000F] outline-none">
-            </header>
+                <div class="bg-black text-white p-6 rounded-xl text-4xl font-bold mb-4" id="calcRes">0 ק"ג</div>
+                <button onclick="calculate()" class="bg-[#E3000F] text-white w-full py-4 rounded-xl font-bold text-xl hover:opacity-90">חשב כמות</button>
+            </div>
+        </div>
 
-            <div id="productGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 overflow-y-auto pb-20">
-                <div class="col-span-full text-center text-gray-400 mt-20">
-                    <i data-lucide="loader-2" class="animate-spin inline-block mb-2"></i> טוען נתונים מהענן...
+        <div style="position:fixed; bottom:0; left:20px; z-index:100;">
+            <div class="bubble" id="robotBubble">שלום! אני Sika-Ai. איך אני יכול לעזור?</div>
+            <img src="https://saban-kiosk-core.pages.dev/admin/sika-ai.png" id="sikaRobot" onclick="toggleBubble()">
+        </div>
+    </div>
+
+    <div id="productModal" class="modal">
+        <div class="bg-white w-[90%] max-w-5xl h-[80%] rounded-3xl flex overflow-hidden shadow-2xl">
+            <div class="w-1/2 bg-gray-50 flex items-center justify-center p-10 relative">
+                <img id="mImg" src="" class="max-h-full max-w-full object-contain mix-blend-multiply">
+                <div id="mBrandBadge" class="absolute top-6 left-6 bg-black text-white px-3 py-1 rounded-full text-xs font-bold">SIKA</div>
+            </div>
+            <div class="w-1/2 p-10 flex flex-col relative">
+                <button onclick="document.getElementById('productModal').style.display='none'" class="absolute top-6 left-6 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><i data-lucide="x"></i></button>
+                <h2 id="mName" class="text-4xl font-black mb-4 leading-tight"></h2>
+                <div class="bg-yellow-50 border-r-4 border-[#E3000F] p-4 rounded-xl mb-6">
+                    <p id="mDesc" class="text-lg text-gray-700"></p>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-3 mb-8">
+                    <div class="bg-gray-50 p-3 rounded-lg text-center"><div class="text-xs text-gray-400 font-bold">כיסוי</div><div id="mCov" class="font-bold">-</div></div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-center"><div class="text-xs text-gray-400 font-bold">ייבוש</div><div id="mDry" class="font-bold">-</div></div>
+                    <div class="bg-gray-50 p-3 rounded-lg text-center"><div class="text-xs text-gray-400 font-bold">עובי</div><div id="mThick" class="font-bold">-</div></div>
+                </div>
+
+                <div class="mt-auto">
+                    <button class="w-full bg-[#111] text-white py-4 rounded-xl font-bold text-xl hover:bg-[#333] transition flex justify-center gap-2">
+                        <i data-lucide="message-circle"></i> שאל את המומחה
+                    </button>
                 </div>
             </div>
         </div>
@@ -43,43 +103,74 @@
         import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         lucide.createIcons();
-        
-        // האזנה בזמן אמת
-        onSnapshot(collection(db, "products"), (snapshot) => {
-            const grid = document.getElementById('productGrid');
-            if (snapshot.empty) {
-                grid.innerHTML = '<div class="col-span-full text-center text-xl">המאגר ריק. כנס לסטודיו להוסיף מוצרים!</div>';
-                return;
-            }
-            
-            grid.innerHTML = "";
-            snapshot.forEach(doc => {
-                const p = doc.data();
-                grid.innerHTML += `
-                    <div class="product-card group">
-                        <div class="h-40 bg-gray-50 flex items-center justify-center p-4 relative">
-                            ${p.status ? `<div class="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-2 py-1 rounded">${p.status}</div>` : ''}
-                            <img src="${p.image || 'https://placehold.co/300'}" class="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-110 transition">
-                        </div>
-                        <div class="p-4 flex-1 flex flex-col">
-                            <div class="text-[10px] font-bold text-gray-400 uppercase">${p.brand || 'GENERAL'}</div>
-                            <h3 class="font-bold text-lg leading-tight mb-1">${p.name}</h3>
-                            <p class="text-xs text-gray-500 line-clamp-2">${p.marketingDesc || ''}</p>
-                        </div>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
+        let products = [];
+
+        onSnapshot(collection(db, "products"), (snap) => {
+            products = [];
+            snap.forEach(doc => products.push({id: doc.id, ...doc.data()}));
+            renderGrid();
         });
 
-        // חיפוש
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.product-card').forEach(card => {
-                const text = card.innerText.toLowerCase();
-                card.style.display = text.includes(term) ? 'flex' : 'none';
-            });
-        });
+        window.renderGrid = () => {
+            const term = document.getElementById('search').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(term));
+            const grid = document.getElementById('view-catalog');
+            
+            if(filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center mt-10 text-gray-400">אין מוצרים להצגה</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="card group" onclick="openModal('${p.id}')">
+                    <div class="h-48 bg-gray-50 flex items-center justify-center p-4 relative">
+                        <img src="${p.image || 'https://placehold.co/300'}" class="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-110 transition duration-500">
+                        ${p.status ? `<span class="absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded">${p.status}</span>` : ''}
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">${p.brand || 'SIKA'}</div>
+                        <h3 class="font-bold text-lg leading-tight mb-2 line-clamp-2">${p.name}</h3>
+                        <div class="mt-auto text-xs font-bold text-[#E3000F] flex items-center gap-1">לפרטים <i data-lucide="arrow-left" size="12"></i></div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.openModal = (id) => {
+            const p = products.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('mName').innerText = p.name;
+            document.getElementById('mDesc').innerText = p.marketingDesc || '';
+            document.getElementById('mImg').src = p.image || 'https://placehold.co/400';
+            document.getElementById('mBrandBadge').innerText = p.brand || 'SIKA';
+            document.getElementById('mCov').innerText = p.tech?.coverage || '-';
+            document.getElementById('mDry').innerText = p.tech?.drying || '-';
+            document.getElementById('mThick').innerText = p.tech?.thickness || '-';
+            document.getElementById('productModal').style.display = 'flex';
+        }
+
+        window.switchView = (view) => {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('btn-'+view).classList.add('active');
+            document.getElementById('view-catalog').style.display = view === 'catalog' ? 'grid' : 'none';
+            document.getElementById('view-calculator').style.display = view === 'calculator' ? 'flex' : 'none';
+        }
+
+        window.calculate = () => {
+            const a = document.getElementById('calcArea').value;
+            const c = document.getElementById('calcCons').value;
+            if(a && c) document.getElementById('calcRes').innerText = (a * c).toFixed(1) + ' ק"ג';
+        }
+
+        window.toggleBubble = () => {
+            const b = document.getElementById('robotBubble');
+            b.classList.toggle('show');
+            setTimeout(() => b.classList.remove('show'), 5000);
+        }
+        
+        // אנימציית פתיחה לבועה
+        setTimeout(window.toggleBubble, 2000);
     </script>
 </body>
 </html>
