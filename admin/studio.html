@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sika Studio - ניהול המוח</title>
+    <title>Sika Studio - Live</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -19,19 +19,14 @@
     <header class="flex justify-between items-center mb-10 border-b border-gray-800 pb-6">
         <div>
             <h1 class="text-4xl font-black text-[#FFC500]">Sika Studio 🎛️</h1>
-            <p class="text-gray-400">מחובר למאגר: <span class="text-blue-400">saban942025-cyber.github.io/kiosk</span></p>
+            <p class="text-gray-400">מחובר לפרויקט: <span class="text-green-400 font-bold">kiosk-saban94 🔥</span></p>
         </div>
-        <div class="flex gap-4">
-            <button onclick="downloadBrain()" class="bg-green-600 text-white px-6 py-3 rounded-full font-bold hover:bg-green-500 flex items-center gap-2">
-                <i data-lucide="download"></i> שמור והורד brain.json
-            </button>
-            <a href="../index.html" target="_blank" class="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200">פתח קיוסק >></a>
-        </div>
+        <a href="../index.html" target="_blank" class="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200">פתח קיוסק >></a>
     </header>
 
     <div class="grid grid-cols-2 gap-8">
         <div class="card border-yellow-600/50 col-span-2">
-            <h2 class="text-xl font-bold mb-6 text-[#FFC500] flex items-center gap-2"><i data-lucide="package-plus"></i> הוספת מוצר למוח</h2>
+            <h2 class="text-xl font-bold mb-6 text-[#FFC500] flex items-center gap-2"><i data-lucide="cloud-lightning"></i> שידור מוצר לקיוסק</h2>
             <div class="flex gap-8">
                 <div class="w-1/3">
                     <label class="label">תמונת מוצר (URL)</label>
@@ -64,82 +59,107 @@
                     <label class="label">תיאור שיווקי</label>
                     <textarea id="pDesc" class="input-dark h-24"></textarea>
                     
-                    <button onclick="addProduct()" class="w-full bg-[#E3000F] text-white py-3 rounded-xl font-bold mt-4 hover:bg-red-600">הוסף למאגר המקומי</button>
+                    <button id="btnSave" class="w-full bg-[#E3000F] text-white py-3 rounded-xl font-bold mt-4 hover:bg-red-600 shadow-[0_0_20px_rgba(227,0,15,0.4)] transition">
+                        שדר מוצר לענן 🚀
+                    </button>
                 </div>
             </div>
         </div>
 
         <div class="card col-span-2">
-            <h2 class="text-xl font-bold mb-4">מוצרים קיימים במוח (<span id="count">0</span>)</h2>
-            <div id="productsList" class="grid grid-cols-4 gap-4 max-h-96 overflow-y-auto pr-2"></div>
+            <h2 class="text-xl font-bold mb-4">מוצרים באוויר (<span id="count">0</span>)</h2>
+            <div id="productsList" class="grid grid-cols-4 gap-4 max-h-96 overflow-y-auto pr-2">
+                <div class="col-span-4 text-center text-gray-500 mt-4">טוען...</div>
+            </div>
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-        let brainData = { config: {}, products: [] };
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // טעינה ראשונית של המוח הקיים
-        async function loadBrain() {
+        // 🔥 הקונפיגורציה שלך 🔥
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo",
+            authDomain: "kiosk-saban94.firebaseapp.com",
+            projectId: "kiosk-saban94",
+            storageBucket: "kiosk-saban94.firebasestorage.app",
+            messagingSenderId: "305877295234",
+            appId: "1:305877295234:web:388472509b86a7052a949b",
+            measurementId: "G-1LFT3538QN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 1. שמירת מוצר לענן
+        document.getElementById('btnSave').addEventListener('click', async () => {
+            const btn = document.getElementById('btnSave');
+            const originalText = btn.innerText;
+            btn.innerText = "משדר...";
+            btn.disabled = true;
+            
             try {
-                const res = await fetch('../brain.json');
-                if(res.ok) {
-                    brainData = await res.json();
-                    renderList();
-                }
-            } catch(e) { console.log("Starting fresh brain"); }
-        }
+                await addDoc(collection(db, "products"), {
+                    name: document.getElementById('pName').value,
+                    brand: document.getElementById('pBrand').value,
+                    category: document.getElementById('pCat').value,
+                    marketingDesc: document.getElementById('pDesc').value,
+                    image: document.getElementById('pImg').value,
+                    createdAt: Date.now()
+                });
+                
+                alert("המוצר באוויר! ✅");
+                // נקה שדות
+                document.getElementById('pName').value = "";
+                document.getElementById('pDesc').value = "";
+                document.getElementById('pImg').value = "";
+                document.getElementById('preview').src = "https://placehold.co/400?text=Preview";
+                
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("שגיאה בשידור: " + e.message);
+            }
+            btn.innerText = originalText;
+            btn.disabled = false;
+        });
 
-        function addProduct() {
-            const product = {
-                id: Date.now(),
-                name: document.getElementById('pName').value,
-                brand: document.getElementById('pBrand').value,
-                category: document.getElementById('pCat').value,
-                marketingDesc: document.getElementById('pDesc').value,
-                image: document.getElementById('pImg').value
-            };
-            
-            brainData.products.unshift(product);
-            renderList();
-            alert("המוצר נוסף לרשימה! אל תשכח להוריד את הקובץ ולעדכן ב-GitHub.");
-            
-            // Clear fields
-            document.getElementById('pName').value = "";
-            document.getElementById('pDesc').value = "";
-            document.getElementById('pImg').value = "";
-        }
-
-        function renderList() {
-            document.getElementById('count').innerText = brainData.products.length;
+        // 2. האזנה לרשימה קיימת (ומחיקה)
+        onSnapshot(collection(db, "products"), (snapshot) => {
             const list = document.getElementById('productsList');
-            list.innerHTML = brainData.products.map((p, i) => `
-                <div class="bg-black p-3 rounded-lg border border-gray-800 relative group">
-                    <img src="${p.image}" class="h-20 w-full object-contain mb-2 bg-white rounded">
-                    <div class="font-bold text-sm truncate">${p.name}</div>
-                    <button onclick="removeProduct(${i})" class="absolute top-2 right-2 bg-red-600 p-1 rounded text-white opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash" size="14"></i></button>
-                </div>
-            `).join('');
+            document.getElementById('count').innerText = snapshot.size;
+            
+            list.innerHTML = "";
+            
+            if(snapshot.size === 0) {
+                list.innerHTML = '<div class="col-span-4 text-center text-gray-500">המאגר ריק.</div>';
+                return;
+            }
+
+            snapshot.forEach((docSnap) => {
+                const p = docSnap.data();
+                const id = docSnap.id;
+                
+                const div = document.createElement('div');
+                div.className = "bg-black p-3 rounded-lg border border-gray-800 relative group";
+                div.innerHTML = `
+                    <img src="${p.image}" class="h-20 w-full object-contain mb-2 bg-white rounded" onerror="this.src='https://placehold.co/400'">
+                    <div class="font-bold text-sm truncate" title="${p.name}">${p.name}</div>
+                    <button class="absolute top-2 right-2 bg-red-600 p-1 rounded text-white opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash" size="14"></i></button>
+                `;
+                
+                // הוספת אירוע מחיקה
+                div.querySelector('button').addEventListener('click', async () => {
+                    if(confirm("למחוק את " + p.name + " מהענן?")) {
+                        await deleteDoc(doc(db, "products", id));
+                    }
+                });
+                
+                list.appendChild(div);
+            });
             lucide.createIcons();
-        }
+        });
 
-        window.removeProduct = (index) => {
-            brainData.products.splice(index, 1);
-            renderList();
-        }
-
-        function downloadBrain() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(brainData, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "brain.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            alert("קובץ brain.json ירד למחשב!\nעכשיו גרור אותו לתיקייה ב-GitHub כדי לעדכן את האתר.");
-        }
-
-        loadBrain();
     </script>
 </body>
 </html>
