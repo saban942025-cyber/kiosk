@@ -3,159 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saban Studio</title>
+    <title>Sika-Ai Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Heebo', sans-serif; background: #111; color: white; }
-        .input-dark { background: #222; border: 1px solid #444; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; }
-        .btn-action { background: #E3000F; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; transition: 0.2s; }
-        .btn-action:hover { background: #ff1f1f; }
-        .ai-btn { position: absolute; left: 8px; top: 35px; color: #4ade80; cursor: pointer; }
+        body { font-family: 'Heebo', sans-serif; background: #f3f4f6; padding: 20px; }
+        .input-std { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; background: white; }
+        
+        /* Kiosk Card Preview Style */
+        .preview-card {
+            background: white; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); width: 320px; height: 480px;
+            margin: 0 auto; display: flex; flex-direction: column; border: 1px solid #e2e8f0;
+        }
     </style>
 </head>
-<body class="p-10 max-w-5xl mx-auto">
-    
-    <header class="flex justify-between items-center mb-10 border-b border-gray-800 pb-5">
-        <h1 class="text-3xl font-black text-[#FFC500]">Saban Studio 🎛️</h1>
-        <a href="../index.html" target="_blank" class="bg-white text-black px-4 py-2 rounded font-bold">פתח קיוסק</a>
-    </header>
+<body class="flex gap-8 max-w-7xl mx-auto h-[95vh]">
 
-    <div class="grid grid-cols-2 gap-10">
-        <div class="space-y-4">
-            <div class="relative">
-                <label class="text-sm text-gray-400">שם המוצר</label>
-                <input id="pName" class="input-dark" placeholder="למשל: Sika TopSeal 107">
+    <div class="w-1/2 flex flex-col gap-4 overflow-y-auto pr-2">
+        <header class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm">
+            <div>
+                <h1 class="text-3xl font-black text-[#E3000F]">Sika-Ai Studio</h1>
+                <p class="text-gray-400 text-sm">מערכת ניהול חכמה</p>
             </div>
+            <a href="../index.html" target="_blank" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold">לקיוסק</a>
+        </header>
 
+        <div class="bg-white p-6 rounded-2xl shadow-sm space-y-4">
+            <h2 class="font-bold flex items-center gap-2"><i data-lucide="wand-2" class="text-purple-500"></i> מחולל AI</h2>
+            <div class="flex gap-2">
+                <input id="aiInput" class="input-std mt-0" placeholder="הקלד שם מוצר (למשל: סיקה טופסיל 107)...">
+                <button onclick="runMagic()" class="bg-purple-600 text-white px-6 rounded-lg font-bold hover:bg-purple-700 whitespace-nowrap">הפעל קסם ✨</button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm space-y-4">
+            <h2 class="font-bold border-b pb-2">פרטי מוצר</h2>
+            <div><label class="text-xs text-gray-400">שם מוצר</label><input id="pName" class="input-std" oninput="updatePreview()"></div>
             <div class="grid grid-cols-2 gap-4">
-                <div class="relative">
-                    <label class="text-sm text-gray-400">מותג</label>
-                    <input id="pBrand" class="input-dark">
-                    <i data-lucide="sparkles" class="ai-btn" onclick="fillField('pBrand')"></i>
-                </div>
-                <div>
-                    <label class="text-sm text-gray-400">קטגוריה</label>
-                    <select id="pCategory" class="input-dark">
+                <div><label class="text-xs text-gray-400">מותג</label><input id="pBrand" class="input-std" oninput="updatePreview()"></div>
+                <div><label class="text-xs text-gray-400">קטגוריה</label>
+                    <select id="pCat" class="input-std">
                         <option value="sealing">איטום</option>
                         <option value="glues">דבקים</option>
                         <option value="flooring">ריצוף</option>
                     </select>
                 </div>
             </div>
-
-            <div class="relative">
-                <label class="text-sm text-gray-400">תיאור שיווקי</label>
-                <textarea id="pMarketing" class="input-dark h-24"></textarea>
-                <i data-lucide="sparkles" class="ai-btn" onclick="fillField('pMarketing')"></i>
-            </div>
+            <div><label class="text-xs text-gray-400">תיאור שיווקי</label><textarea id="pDesc" class="input-std h-24" oninput="updatePreview()"></textarea></div>
+            <div><label class="text-xs text-gray-400">תמונה (URL)</label><input id="pImg" class="input-std" oninput="updatePreview()"></div>
             
-            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
-                <label class="text-xs text-blue-400 font-bold mb-2 block">מפרט טכני (AI Auto-Fill)</label>
+            <div class="bg-gray-50 p-4 rounded-xl border">
+                <label class="text-xs font-bold text-gray-500 block mb-2">נתונים טכניים</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <input id="pCoverage" placeholder="כיסוי" class="input-dark text-xs mb-0">
-                    <input id="pDrying" placeholder="ייבוש" class="input-dark text-xs mb-0">
-                    <input id="pThickness" placeholder="עובי" class="input-dark text-xs mb-0">
+                    <input id="tCov" placeholder="כיסוי" class="input-std text-xs">
+                    <input id="tDry" placeholder="ייבוש" class="input-std text-xs">
+                    <input id="tThick" placeholder="עובי" class="input-std text-xs">
                 </div>
             </div>
 
-            <div>
-                <label class="text-sm text-gray-400">תמונה (URL)</label>
-                <input id="pImage" class="input-dark" onchange="document.getElementById('preview').src=this.value">
-            </div>
-
-            <button onclick="saveProduct()" class="btn-action flex justify-center gap-2">
-                <i data-lucide="cloud-upload"></i> שדר לקיוסק
+            <button onclick="saveProduct()" class="w-full bg-[#E3000F] text-white py-4 rounded-xl font-bold text-lg hover:bg-red-600 shadow-lg">
+                שמור ופרסם בקיוסק 🚀
             </button>
         </div>
+    </div>
 
-        <div class="bg-white rounded-2xl p-6 text-black">
-            <h3 class="font-bold text-gray-400 mb-4">תצוגה מקדימה</h3>
-            <div class="border rounded-xl p-4 text-center">
-                <img id="preview" src="https://placehold.co/400?text=Preview" class="h-48 mx-auto object-contain mb-4">
-                <h2 id="prevName" class="text-2xl font-black">שם המוצר</h2>
-                <div id="prevDesc" class="text-gray-500 mt-2">תיאור המוצר יופיע כאן...</div>
+    <div class="w-1/2 flex items-center justify-center bg-gray-200 rounded-3xl relative">
+        <div class="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-xs font-bold text-gray-500 shadow">תצוגה מקדימה</div>
+        
+        <div class="preview-card group">
+            <div class="h-1/2 bg-gray-50 flex items-center justify-center p-6 relative">
+                <img id="prevImg" src="https://placehold.co/400?text=Product" class="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-500">
             </div>
-            <div class="mt-6 p-4 bg-gray-100 rounded-xl">
-                <div class="flex items-center gap-2 mb-2 text-green-600 font-bold">
-                    <i data-lucide="wifi"></i> מחובר ל-Firebase
+            <div class="p-6 flex-1 flex flex-col bg-white">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2" id="prevBrand">BRAND</div>
+                <h3 class="font-bold text-2xl leading-tight mb-3 text-gray-900" id="prevName">שם המוצר</h3>
+                <p class="text-sm text-gray-500 line-clamp-3" id="prevDesc">התיאור יופיע כאן...</p>
+                <div class="mt-auto pt-4 border-t flex justify-between items-center text-[#E3000F] font-bold text-sm">
+                    לפרטים מלאים <i data-lucide="arrow-left" size="16"></i>
                 </div>
-                <div id="status" class="text-sm text-gray-500">מוכן לשידור...</div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // שים לב לנתיב: אנחנו בתיקיית admin ויוצאים החוצה ל-js
         import { db } from '../js/firebase-config.js';
         import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { askGeminiAdmin } from '../js/gemini-service.js';
 
         lucide.createIcons();
 
-        // עדכון תצוגה מקדימה בזמן אמת
-        document.getElementById('pName').addEventListener('input', (e) => document.getElementById('prevName').innerText = e.target.value);
-        document.getElementById('pMarketing').addEventListener('input', (e) => document.getElementById('prevDesc').innerText = e.target.value);
+        // Update Preview Realtime
+        window.updatePreview = () => {
+            document.getElementById('prevName').innerText = document.getElementById('pName').value || 'שם המוצר';
+            document.getElementById('prevBrand').innerText = document.getElementById('pBrand').value || 'BRAND';
+            document.getElementById('prevDesc').innerText = document.getElementById('pDesc').value || 'תיאור...';
+            const imgUrl = document.getElementById('pImg').value;
+            if(imgUrl) document.getElementById('prevImg').src = imgUrl;
+        }
 
-        // מילוי שדות בעזרת AI
-        window.fillField = async (field) => {
-            const name = document.getElementById('pName').value;
-            if(!name) return alert("כתוב שם מוצר קודם");
+        // AI Magic
+        window.runMagic = async () => {
+            const name = document.getElementById('aiInput').value;
+            if(!name) return alert("אנא הקלד שם מוצר");
             
-            const icon = event.target;
-            icon.classList.add('animate-spin'); // אנימציה
-            
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "חושב...";
+            btn.disabled = true;
+
             const data = await askGeminiAdmin(name);
             
             if(data) {
-                if(field === 'pBrand') document.getElementById('pBrand').value = data.brand;
-                if(field === 'pMarketing') document.getElementById('pMarketing').value = data.marketingDesc;
+                document.getElementById('pName').value = data.name || name;
+                document.getElementById('pBrand').value = data.brand || '';
+                document.getElementById('pDesc').value = data.marketingDesc || '';
+                document.getElementById('pCat').value = data.category || 'sealing';
                 
-                // מילוי טכני אוטומטי אם כבר הבאנו מידע
                 if(data.tech) {
-                    document.getElementById('pCoverage').value = data.tech.coverage || '';
-                    document.getElementById('pDrying').value = data.tech.drying || '';
-                    document.getElementById('pThickness').value = data.tech.thickness || '';
+                    document.getElementById('tCov').value = data.tech.coverage || '';
+                    document.getElementById('tDry').value = data.tech.drying || '';
+                    document.getElementById('tThick').value = data.tech.thickness || '';
                 }
+                updatePreview();
             }
-            icon.classList.remove('animate-spin');
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
 
-        // שמירה למסד הנתונים
+        // Save
         window.saveProduct = async () => {
-            const btn = document.querySelector('.btn-action');
-            btn.innerText = "משדר...";
+            const btn = event.target;
+            btn.innerText = "שומר...";
             
             try {
                 await addDoc(collection(db, "products"), {
                     name: document.getElementById('pName').value,
                     brand: document.getElementById('pBrand').value,
-                    category: document.getElementById('pCategory').value,
-                    marketingDesc: document.getElementById('pMarketing').value,
-                    image: document.getElementById('pImage').value,
+                    category: document.getElementById('pCat').value,
+                    marketingDesc: document.getElementById('pDesc').value,
+                    image: document.getElementById('pImg').value,
                     tech: {
-                        coverage: document.getElementById('pCoverage').value,
-                        drying: document.getElementById('pDrying').value,
-                        thickness: document.getElementById('pThickness').value
+                        coverage: document.getElementById('tCov').value,
+                        drying: document.getElementById('tDry').value,
+                        thickness: document.getElementById('tThick').value
                     },
-                    status: 'new',
                     createdAt: Date.now()
                 });
-                
-                document.getElementById('status').innerText = "✅ שודר בהצלחה: " + new Date().toLocaleTimeString();
-                document.getElementById('status').classList.add('text-green-600');
-                
-                // איפוס
-                document.querySelectorAll('input, textarea').forEach(i => i.value = '');
-                document.getElementById('preview').src = "https://placehold.co/400?text=Next+Product";
-                
+                alert("מוצר עלה לאוויר בהצלחה! 🔥");
+                location.reload();
             } catch (e) {
-                console.error(e);
                 alert("שגיאה: " + e.message);
+                btn.innerText = "נסה שוב";
             }
-            btn.innerHTML = `<i data-lucide="cloud-upload"></i> שדר לקיוסק`;
-            lucide.createIcons();
         }
     </script>
 </body>
