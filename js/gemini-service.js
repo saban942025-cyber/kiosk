@@ -1,5 +1,4 @@
 // === Sika Key Pool ===
-// רשימת המפתחות המעודכנת שלך
 const API_KEYS_POOL = [
     "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
@@ -9,16 +8,15 @@ const API_KEYS_POOL = [
     "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
 
-// === Model Discovery List ===
-// הרשימה שהמערכת תבדוק אוטומטית עבור כל מפתח
+// רשימת מודלים מורחבת - מנסה את כולם עד שאחד עובד
 const MODELS_TO_TRY = [
-    "gemini-1.5-flash",       // המהיר והמומלץ כרגע
-    "gemini-1.5-pro",         // החכם ביותר
-    "gemini-1.0-pro",         // היציב והישן (בדרך כלל עובד כגיבוי)
-    "gemini-2.0-flash-exp"    // החדש ביותר (לפעמים לא יציב)
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-1.0-pro",
+    "gemini-pro",
+    "gemini-2.0-flash-exp"
 ];
 
-// בריכות חיפוש תמונות
 const CX_POOL = [
     "3331a7d5c75e14f26",
     "635bc3eeee0194b16",
@@ -30,15 +28,15 @@ function getRandomItem(arr) {
 }
 
 /**
- * המוח החכם: מגלה לבד איזה מודל עובד
+ * המוח המרכזי: יצירת תוכן
  */
 export async function askGeminiAdmin(productName) {
     
-    // נסה עד 3 מפתחות שונים לפני שאתה מוותר
-    for (let i = 0; i < 3; i++) {
+    // מנסה עד 3 מפתחות שונים
+    for (let k = 0; k < 3; k++) {
         const currentKey = getRandomItem(API_KEYS_POOL);
         
-        // עבור כל מפתח, נסה למצוא מודל שעובד
+        // עבור כל מפתח, מנסה את כל המודלים האפשריים
         for (const model of MODELS_TO_TRY) {
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
@@ -62,9 +60,8 @@ export async function askGeminiAdmin(productName) {
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
 
-                // אם קיבלנו שגיאה (404 = מודל לא קיים, 429 = עומס) - מדלגים למודל הבא
                 if (!response.ok) {
-                    // console.log(`Model ${model} failed on key ...${currentKey.slice(-4)} (${response.status})`);
+                    // אם נכשל, מדלג למודל הבא בשקט
                     continue; 
                 }
 
@@ -73,10 +70,10 @@ export async function askGeminiAdmin(productName) {
 
                 let text = data.candidates[0].content.parts[0].text;
                 text = text.replace(/```json|```/g, '').trim();
-                return JSON.parse(text); // הצלחה! מצאנו שילוב עובד.
+                return JSON.parse(text); // הצלחה!
 
             } catch (error) {
-                // שגיאת רשת - ממשיכים לנסות
+                // שגיאת רשת - נסה את הבא
             }
         }
     }
@@ -85,6 +82,9 @@ export async function askGeminiAdmin(productName) {
     return null;
 }
 
+/**
+ * מנוע חיפוש תמונות
+ */
 export async function searchGoogleImages(query) {
     for (let attempt = 0; attempt < 3; attempt++) {
         const apiKey = getRandomItem(API_KEYS_POOL);
@@ -104,29 +104,37 @@ export async function searchGoogleImages(query) {
     return [];
 }
 
+/**
+ * המומחה בצ'אט
+ */
 export async function askProductExpert(product, userQuestion) {
-    const currentKey = getRandomItem(API_KEYS_POOL);
-    // לשיחה נשתמש במודל הכי יציב ברשימה באופן ישיר
-    const stableModel = "gemini-1.5-flash"; 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${stableModel}:generateContent?key=${currentKey}`;
+    // בשיחה עם המומחה ננסה גם כמה מודלים
+    const chatModels = ["gemini-1.5-flash", "gemini-pro"];
     
-    const context = `
-    אתה "Sika-Ai".
-    מוצר: ${product.name}
-    תיאור: ${product.marketingDesc}
-    טכני: ${JSON.stringify(product.tech)}
-    שאלה: "${userQuestion}"
-    ענה בעברית, קצר ולעניין.`;
+    for (const model of chatModels) {
+        const currentKey = getRandomItem(API_KEYS_POOL);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
+        
+        const context = `
+        אתה "Sika-Ai".
+        מוצר: ${product.name}
+        תיאור: ${product.marketingDesc}
+        טכני: ${JSON.stringify(product.tech)}
+        שאלה: "${userQuestion}"
+        ענה בעברית, קצר ולעניין.`;
 
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
-        });
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
-    } catch (e) {
-        return "יש הפרעה בקליטה, נסה שוב.";
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
+            });
+            
+            if(!response.ok) continue;
+            
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        } catch (e) { }
     }
+    return "יש הפרעה בקליטה, נסה שוב.";
 }
