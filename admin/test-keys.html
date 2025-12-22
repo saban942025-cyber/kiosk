@@ -2,68 +2,101 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Golden Key Test 🔑</title>
+    <title>Sika Key Diagnostic Tool 🛠️</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }</style>
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+<body class="max-w-4xl mx-auto">
     
-    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border border-gray-700">
-        <h1 class="text-2xl font-black text-yellow-500 mb-2">בדיקת מפתח הזהב</h1>
-        <p class="font-mono text-xs text-gray-400 mb-6 bg-black p-2 rounded">AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U</p>
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
+        <h1 class="text-3xl font-black text-yellow-500 mb-6 flex items-center gap-2">
+            <i data-lucide="activity"></i> בדיקת מפתחות מקיפה
+        </h1>
 
-        <div id="status" class="mb-6">
-            <button onclick="testKey()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition flex items-center gap-2 mx-auto">
-                <i data-lucide="zap"></i> בדוק יכולות AI
-            </button>
+        <div class="mb-6 bg-blue-900/30 p-4 rounded-lg border border-blue-500/30 text-sm text-blue-200">
+            הכלי יבדוק כל מפתח מול מספר מודלים וגרסאות API כדי למצוא את השילוב המנצח.
         </div>
 
-        <div id="log" class="text-left text-xs font-mono bg-black p-4 rounded h-32 overflow-auto text-green-400 hidden"></div>
+        <div id="keysContainer" class="space-y-4"></div>
+
+        <button onclick="startScan()" class="mt-8 w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition flex justify-center items-center gap-2">
+            <i data-lucide="play"></i> התחל סריקה
+        </button>
     </div>
 
     <script>
         lucide.createIcons();
-        const KEY = "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U";
 
-        async function testKey() {
-            const btn = document.querySelector('button');
-            const log = document.getElementById('log');
-            const status = document.getElementById('status');
-            
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> מתחבר למוח...`;
-            log.classList.remove('hidden');
-            log.innerHTML = "> מתחיל בדיקה...\n";
+        // המפתח שביקשת לבדוק (אפשר להוסיף עוד לרשימה)
+        const KEYS_TO_TEST = [
+            "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U"
+        ];
 
-            // נבדוק מול המודל היציב ביותר (v1/gemini-pro)
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${KEY}`;
-            
+        // רשימת הצירופים האפשריים לבדיקה (מודל + גרסת API)
+        const ENDPOINTS = [
+            { label: "Gemini 1.5 Flash (v1beta)", url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent" },
+            { label: "Gemini 1.5 Pro (v1beta)",   url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent" },
+            { label: "Gemini 1.0 Pro (v1beta)",   url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent" },
+            { label: "Gemini Pro (v1beta)",       url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent" },
+            { label: "Gemini Pro (v1)",           url: "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent" }
+        ];
+
+        async function startScan() {
+            const container = document.getElementById('keysContainer');
+            container.innerHTML = ''; // ניקוי תוצאות קודמות
+
+            for (const key of KEYS_TO_TEST) {
+                // יצירת אזור למפתח
+                const keyBox = document.createElement('div');
+                keyBox.className = "bg-gray-900 p-4 rounded-xl border border-gray-700";
+                keyBox.innerHTML = `
+                    <div class="font-mono text-yellow-400 font-bold mb-3 border-b border-gray-700 pb-2">${key}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="results-${key.substring(0,10)}">
+                        <div class="text-gray-500 text-sm">בודק... <i data-lucide="loader-2" class="animate-spin inline"></i></div>
+                    </div>
+                `;
+                container.appendChild(keyBox);
+                lucide.createIcons();
+
+                const resultsDiv = document.getElementById(`results-${key.substring(0,10)}`);
+                resultsDiv.innerHTML = ''; // ניקוי הודעת טעינה
+
+                // הרצת הבדיקות
+                for (const endpoint of ENDPOINTS) {
+                    const status = await checkEndpoint(key, endpoint.url);
+                    
+                    const badge = document.createElement('div');
+                    const colorClass = status.ok ? "bg-green-900/40 border-green-600 text-green-400" : "bg-red-900/20 border-red-900/30 text-red-400 opacity-60";
+                    const icon = status.ok ? "check-circle" : "x-circle";
+                    
+                    badge.className = `flex items-center justify-between p-2 rounded border text-xs ${colorClass}`;
+                    badge.innerHTML = `
+                        <span class="flex items-center gap-2"><i data-lucide="${icon}" size="14"></i> ${endpoint.label}</span>
+                        <span>${status.ok ? '✅ תקין' : status.code}</span>
+                    `;
+                    resultsDiv.appendChild(badge);
+                }
+                lucide.createIcons();
+            }
+        }
+
+        async function checkEndpoint(key, baseUrl) {
+            const url = `${baseUrl}?key=${key}`;
             try {
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
-                        contents: [{ parts: [{ text: "כתוב מילה אחת: הצלחה" }] }] 
+                        contents: [{ parts: [{ text: "Hello" }] }] 
                     })
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const text = data.candidates[0].content.parts[0].text;
-                    log.innerHTML += `> תשובת גוגל: "${text}"\n`;
-                    log.innerHTML += `> ✅ המפתח תקין לחלוטין ל-AI!`;
-                    status.innerHTML = `<div class="text-green-500 font-bold text-xl">✅ עובד פיקס!</div><p class="text-gray-400 text-sm mt-2">המפתח הזה יכול גם לחפש וגם לכתוב.</p>`;
-                } else {
-                    log.innerHTML += `> ❌ שגיאה: ${response.status}\n`;
-                    if(response.status === 403) log.innerHTML += `> המפתח חסום ל-AI (Generative Language API לא מופעל).`;
-                    if(response.status === 404) log.innerHTML += `> המודל לא נמצא (נסה endpoint אחר).`;
-                    status.innerHTML = `<div class="text-red-500 font-bold text-xl">❌ נכשל ב-AI</div>`;
-                }
+                if (response.ok) return { ok: true, code: 200 };
+                return { ok: false, code: response.status }; // מחזיר 404, 403, 429 וכו'
             } catch (e) {
-                log.innerHTML += `> ❌ שגיאה: ${e.message}`;
-                status.innerHTML = `<div class="text-red-500 font-bold text-xl">❌ שגיאת רשת</div>`;
+                return { ok: false, code: "ERR" };
             }
-            lucide.createIcons();
         }
     </script>
 </body>
