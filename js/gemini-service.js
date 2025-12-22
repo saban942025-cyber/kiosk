@@ -1,10 +1,11 @@
 // === Sika Key Pool ===
 const API_KEYS_POOL = [
-    "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
+    "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
     "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
     "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
     "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
+    "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U",
     "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
 
