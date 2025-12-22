@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Sika Studio - Visual Edition 📸</title>
+    <title>Sika Studio Pro 🚀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -11,23 +11,21 @@
         .input-dark { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; outline: none; transition: 0.2s; }
         .input-dark:focus { border-color: #E3000F; }
         
-        /* עיצוב כרטיסי התמונות */
-        .img-card { 
+        /* כרטיסי מדיה */
+        .media-card { 
             position: relative; border-radius: 8px; overflow: hidden; 
             border: 2px solid transparent; cursor: pointer; transition: 0.2s;
-            height: 100px; background: #000;
+            background: #000; aspect-ratio: 16/9;
         }
-        .img-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
-        .img-card:hover img { opacity: 1; }
-        .img-card:hover { border-color: #3b82f6; transform: scale(1.05); z-index: 10; }
-        .img-card.selected { border-color: #E3000F; }
-        .img-card.selected img { opacity: 1; }
+        .media-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        .media-card:hover { border-color: #3b82f6; transform: scale(1.03); z-index: 10; }
+        .media-card.selected { border-color: #E3000F; opacity: 1; }
+        .media-card .badge { position: absolute; top: 5px; right: 5px; background: #E3000F; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         
-        .check-badge { 
-            position: absolute; top: 2px; right: 2px; background: #E3000F; 
-            color: white; border-radius: 50%; padding: 2px; display: none; 
-        }
-        .img-card.selected .check-badge { display: block; }
+        /* סרגל גלילה מותאם */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
 <body class="flex">
@@ -35,33 +33,44 @@
     <div class="w-72 bg-gray-900 border-l border-gray-800 flex flex-col">
         <div class="p-4 border-b border-gray-800">
             <h1 class="text-2xl font-black text-[#E3000F] tracking-tighter">SIKA STUDIO</h1>
-            <p class="text-xs text-gray-500">ניהול מלאי ויזואלי</p>
+            <p class="text-xs text-gray-500">ניהול תוכן מתקדם</p>
         </div>
         <div class="p-2">
-            <button onclick="clearForm()" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded text-sm font-bold border border-gray-700">+ מוצר חדש</button>
+            <button onclick="clearForm()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold shadow-lg">+ מוצר חדש</button>
         </div>
-        <div id="inventoryList" class="flex-1 overflow-y-auto p-2 space-y-1">
-            </div>
+        <div id="inventoryList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
     </div>
 
     <div class="flex-1 p-8 overflow-y-auto">
-        <div class="max-w-5xl mx-auto flex gap-8">
+        <div class="max-w-6xl mx-auto flex gap-8">
             
-            <div class="w-2/3 space-y-5">
+            <div class="w-2/3 space-y-6">
                 
                 <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl">
-                    <label class="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">
-                        <i data-lucide="image"></i> איתור תמונות (Google)
-                    </label>
-                    <div class="flex gap-2 mb-4">
-                        <input id="searchQuery" class="input-dark font-bold text-lg" placeholder="הקלד שם מוצר לחיפוש (למשל: סיקה פלקס 11FC)...">
-                        <button onclick="runImageSearch()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-lg font-bold whitespace-nowrap flex items-center gap-2">
-                            <i data-lucide="search"></i> חפש
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="sparkles" class="text-yellow-500"></i> איתור מדיה אוטומטי
+                        </label>
+                        <button onclick="runMediaSearch()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-6 py-2 rounded-lg font-bold shadow-md flex items-center gap-2">
+                            <i data-lucide="search"></i> חפש הכל
                         </button>
                     </div>
+                    
+                    <input id="searchQuery" class="input-dark font-bold text-lg mb-4" placeholder="שם מוצר לחיפוש (לדוגמה: Sika TopSeal 107)">
 
-                    <div id="imageGrid" class="grid grid-cols-3 gap-3 hidden">
+                    <div class="mb-4">
+                        <h3 class="text-xs text-gray-400 mb-2 font-bold uppercase">תמונות (בחר אחת)</h3>
+                        <div id="imageGrid" class="grid grid-cols-4 gap-3 min-h-[80px]">
+                            <div class="text-gray-500 text-xs col-span-4 text-center py-4">המתן לחיפוש...</div>
                         </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xs text-gray-400 mb-2 font-bold uppercase">סרטוני יוטיוב (בחר אחד)</h3>
+                        <div id="videoGrid" class="grid grid-cols-3 gap-3 min-h-[80px]">
+                            <div class="text-gray-500 text-xs col-span-3 text-center py-4">המתן לחיפוש...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700">
@@ -71,36 +80,22 @@
                     </div>
 
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-xs text-gray-400">שם מוצר (לתצוגה)</label>
-                            <input id="pName" class="input-dark">
-                        </div>
-                        
+                        <input id="pName" class="input-dark font-bold" placeholder="שם מוצר מלא">
                         <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs text-gray-400">מותג</label>
-                                <input id="pBrand" class="input-dark">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-400">קטגוריה</label>
-                                <select id="pCat" class="input-dark">
-                                    <option value="sealing">איטום</option>
-                                    <option value="glues">דבקים</option>
-                                    <option value="flooring">ריצוף</option>
-                                    <option value="concrete">בטון</option>
-                                    <option value="paint">צבע</option>
-                                </select>
-                            </div>
+                            <input id="pBrand" class="input-dark" placeholder="מותג">
+                            <select id="pCat" class="input-dark">
+                                <option value="sealing">איטום</option>
+                                <option value="glues">דבקים</option>
+                                <option value="flooring">ריצוף</option>
+                                <option value="concrete">בטון</option>
+                                <option value="paint">צבע</option>
+                            </select>
                         </div>
-
-                        <div>
-                            <label class="text-xs text-gray-400">תיאור שיווקי</label>
-                            <textarea id="pDesc" class="input-dark h-20"></textarea>
-                        </div>
+                        <textarea id="pDesc" class="input-dark h-24" placeholder="תיאור שיווקי"></textarea>
                         
-                        <div>
-                            <label class="text-xs text-gray-400">URL תמונה (נבחר אוטומטית)</label>
-                            <input id="pImg" class="input-dark text-xs text-gray-500">
+                        <div class="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                            <input id="pImg" class="bg-transparent border-b border-gray-700 w-full" readonly placeholder="URL תמונה">
+                            <input id="pVideo" class="bg-transparent border-b border-gray-700 w-full" readonly placeholder="URL וידאו">
                         </div>
                     </div>
                 </div>
@@ -114,21 +109,30 @@
                     </div>
                 </div>
 
-                <button onclick="saveProduct()" class="w-full bg-[#E3000F] hover:bg-red-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg flex justify-center gap-2">
+                <button onclick="saveProduct()" class="w-full bg-[#E3000F] hover:bg-red-600 text-white py-4 rounded-xl font-bold text-xl shadow-lg flex justify-center gap-2 transform transition hover:scale-[1.01]">
                     <i data-lucide="save"></i> שמור מוצר
                 </button>
             </div>
 
             <div class="w-1/3">
-                <div class="sticky top-10 bg-white text-black rounded-3xl overflow-hidden shadow-2xl h-[500px] flex flex-col">
-                    <div class="h-1/2 bg-gray-100 flex items-center justify-center p-6 relative">
+                <div class="sticky top-10 bg-white text-black rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+                    <div class="aspect-square bg-gray-100 flex items-center justify-center p-6 relative">
                         <img id="previewImg" src="https://placehold.co/400?text=Sika" class="max-h-full max-w-full object-contain mix-blend-multiply">
-                        <span class="absolute top-4 left-4 bg-black text-white text-[10px] font-bold px-2 py-1 rounded">PREVIEW</span>
+                        <div id="videoBadge" class="absolute bottom-4 right-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1 hidden">
+                            <i data-lucide="youtube" size="14"></i> VIDEO
+                        </div>
                     </div>
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div id="prevBrand" class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">BRAND</div>
-                        <h2 id="prevName" class="text-2xl font-black leading-tight mb-2">שם המוצר</h2>
-                        <p id="prevDesc" class="text-sm text-gray-500 line-clamp-4">התיאור יופיע כאן בזמן אמת...</p>
+                    
+                    <div class="p-6 flex-1 flex flex-col space-y-3">
+                        <div id="prevBrand" class="text-xs font-bold text-gray-400 uppercase tracking-widest">BRAND</div>
+                        <h2 id="prevName" class="text-3xl font-black leading-tight">שם המוצר</h2>
+                        <div class="h-1 w-10 bg-[#E3000F]"></div>
+                        <p id="prevDesc" class="text-sm text-gray-600 line-clamp-4 leading-relaxed">תיאור המוצר יופיע כאן...</p>
+                        
+                        <div id="previewVideoContainer" class="hidden mt-4 pt-4 border-t border-gray-200">
+                            <p class="text-xs font-bold text-gray-400 mb-2">וידאו מצורף:</p>
+                            <iframe id="previewIframe" class="w-full aspect-video rounded-lg bg-black" frameborder="0" allowfullscreen></iframe>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -139,57 +143,86 @@
     <script type="module">
         import { db } from '../js/firebase-config.js';
         import { collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { searchProductImages } from '../js/gemini-service.js';
+        import { searchProductImages, searchYouTubeVideos, askGeminiAdmin } from '../js/gemini-service.js';
 
         lucide.createIcons();
         let allProducts = [];
 
-        // 1. חיפוש תמונות
-        window.runImageSearch = async () => {
+        // --- פונקציית החיפוש המשולבת ---
+        window.runMediaSearch = async () => {
             const query = document.getElementById('searchQuery').value;
             if(!query) return alert("אנא הזן שם מוצר לחיפוש");
             
-            // עדכון אוטומטי של שם המוצר אם הוא ריק
+            // עדכון שדות טקסט אם ריקים
             if(!document.getElementById('pName').value) {
                 document.getElementById('pName').value = query;
                 updatePreview();
+                
+                // נסיון למשוך גם טקסט מה-AI ברקע
+                askGeminiAdmin(query).then(data => {
+                    if(data && !document.getElementById('pDesc').value) {
+                        document.getElementById('pDesc').value = data.marketingDesc;
+                        document.getElementById('pBrand').value = data.brand;
+                        updatePreview();
+                    }
+                });
             }
 
-            const grid = document.getElementById('imageGrid');
-            grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 text-sm py-4"><i data-lucide="loader-2" class="animate-spin inline"></i> מחפש בגוגל...</div>';
-            grid.classList.remove('hidden');
+            // אינדיקציה לטעינה
+            document.getElementById('imageGrid').innerHTML = '<div class="col-span-4 text-center"><i data-lucide="loader-2" class="animate-spin inline"></i> מחפש תמונות...</div>';
+            document.getElementById('videoGrid').innerHTML = '<div class="col-span-3 text-center"><i data-lucide="loader-2" class="animate-spin inline"></i> מחפש וידאו...</div>';
             lucide.createIcons();
 
-            const images = await searchProductImages(query);
-            
-            grid.innerHTML = "";
-            if(images.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center text-red-400 text-sm">לא נמצאו תוצאות</div>';
-                return;
-            }
+            // הרצת חיפושים במקביל
+            const [images, videos] = await Promise.all([
+                searchProductImages(query),
+                searchYouTubeVideos(query)
+            ]);
 
+            // הצגת תמונות
+            const imgGrid = document.getElementById('imageGrid');
+            imgGrid.innerHTML = "";
             images.forEach(img => {
                 const div = document.createElement('div');
-                div.className = "img-card";
-                div.onclick = () => selectImage(img.link, div);
-                div.innerHTML = `
-                    <img src="${img.link}" onerror="this.src='https://placehold.co/100?text=Error'">
-                    <div class="check-badge"><i data-lucide="check" size="12"></i></div>
-                `;
-                grid.appendChild(div);
+                div.className = "media-card";
+                div.onclick = () => {
+                    document.querySelectorAll('#imageGrid .media-card').forEach(c => c.classList.remove('selected'));
+                    div.classList.add('selected');
+                    document.getElementById('pImg').value = img.link;
+                    document.getElementById('previewImg').src = img.link;
+                };
+                div.innerHTML = `<img src="${img.link}">`;
+                imgGrid.appendChild(div);
             });
+
+            // הצגת וידאו
+            const vidGrid = document.getElementById('videoGrid');
+            vidGrid.innerHTML = "";
+            if(videos.length === 0) {
+                vidGrid.innerHTML = '<div class="col-span-3 text-center text-xs text-red-400">לא נמצאו סרטונים (ודא ש-YouTube API מופעל)</div>';
+            } else {
+                videos.forEach(vid => {
+                    const div = document.createElement('div');
+                    div.className = "media-card";
+                    div.onclick = () => {
+                        document.querySelectorAll('#videoGrid .media-card').forEach(c => c.classList.remove('selected'));
+                        div.classList.add('selected');
+                        document.getElementById('pVideo').value = vid.embed;
+                        updateVideoPreview(vid.embed);
+                    };
+                    div.innerHTML = `
+                        <img src="${vid.thumbnail}">
+                        <div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play-circle" class="text-white opacity-80" size="32"></i></div>
+                        <div class="badge">YouTube</div>
+                        <div class="absolute bottom-0 bg-black/70 text-white text-[10px] w-full p-1 truncate">${vid.title}</div>
+                    `;
+                    vidGrid.appendChild(div);
+                });
+            }
             lucide.createIcons();
         }
 
-        function selectImage(url, el) {
-            document.querySelectorAll('.img-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            
-            document.getElementById('pImg').value = url;
-            document.getElementById('previewImg').src = url;
-        }
-
-        // 2. עדכון Live Preview
+        // --- עדכון תצוגה מקדימה ---
         ['pName', 'pBrand', 'pDesc'].forEach(id => {
             document.getElementById(id).addEventListener('input', updatePreview);
         });
@@ -200,9 +233,28 @@
             document.getElementById('prevDesc').innerText = document.getElementById('pDesc').value || 'תיאור...';
         }
 
-        // 3. ניהול מלאי
+        function updateVideoPreview(embedUrl) {
+            const container = document.getElementById('previewVideoContainer');
+            const iframe = document.getElementById('previewIframe');
+            const badge = document.getElementById('videoBadge');
+            
+            if(embedUrl) {
+                container.classList.remove('hidden');
+                badge.classList.remove('hidden');
+                iframe.src = embedUrl;
+            } else {
+                container.classList.add('hidden');
+                badge.classList.add('hidden');
+                iframe.src = "";
+            }
+        }
+
+        // --- ניהול נתונים (Firebase) ---
         async function loadInventory() {
             const list = document.getElementById('inventoryList');
+            list.innerHTML = '<div class="text-center p-4"><i data-lucide="loader-2" class="animate-spin"></i></div>';
+            lucide.createIcons();
+            
             const snap = await getDocs(collection(db, "products"));
             allProducts = [];
             list.innerHTML = "";
@@ -211,11 +263,16 @@
                 const p = {id: docSnap.id, ...docSnap.data()};
                 allProducts.push(p);
                 list.innerHTML += `
-                    <div onclick="loadProduct('${p.id}')" class="p-3 border-b border-gray-800 hover:bg-gray-800 cursor-pointer flex gap-3 items-center">
-                        <img src="${p.image}" class="w-8 h-8 rounded bg-white object-contain">
-                        <div class="text-xs font-bold truncate">${p.name}</div>
+                    <div onclick="loadProduct('${p.id}')" class="p-3 border-b border-gray-800 hover:bg-gray-800 cursor-pointer flex gap-3 items-center group">
+                        <img src="${p.image || 'https://placehold.co/50'}" class="w-10 h-10 rounded bg-white object-contain">
+                        <div class="flex-1 overflow-hidden">
+                            <div class="text-xs font-bold truncate text-white group-hover:text-blue-400 transition">${p.name}</div>
+                            <div class="text-[10px] text-gray-500">${p.brand || ''}</div>
+                        </div>
+                        ${p.videoUrl ? '<i data-lucide="video" size="12" class="text-red-500"></i>' : ''}
                     </div>`;
             });
+            lucide.createIcons();
         }
 
         window.loadProduct = (id) => {
@@ -223,20 +280,25 @@
             if(!p) return;
             document.getElementById('editId').value = id;
             document.getElementById('searchQuery').value = p.name;
+            
             document.getElementById('pName').value = p.name;
             document.getElementById('pBrand').value = p.brand;
             document.getElementById('pCat').value = p.category;
             document.getElementById('pDesc').value = p.marketingDesc;
             document.getElementById('pImg').value = p.image;
+            document.getElementById('pVideo').value = p.videoUrl || '';
+            
             document.getElementById('tCov').value = p.tech?.coverage || '';
             document.getElementById('tDry').value = p.tech?.drying || '';
             document.getElementById('tThick').value = p.tech?.thickness || '';
             
-            document.getElementById('previewImg').src = p.image;
+            document.getElementById('previewImg').src = p.image || 'https://placehold.co/400';
             updatePreview();
+            updateVideoPreview(p.videoUrl);
             
-            // ניקוי תוצאות חיפוש ישנות
-            document.getElementById('imageGrid').classList.add('hidden');
+            // איפוס גריד חיפוש
+            document.getElementById('imageGrid').innerHTML = '<div class="col-span-4 text-center text-xs text-gray-500 py-4">בצע חיפוש חדש לשינוי תמונה</div>';
+            document.getElementById('videoGrid').innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-4">בצע חיפוש חדש לשינוי וידאו</div>';
         }
 
         window.saveProduct = async () => {
@@ -247,6 +309,7 @@
                 category: document.getElementById('pCat').value,
                 marketingDesc: document.getElementById('pDesc').value,
                 image: document.getElementById('pImg').value,
+                videoUrl: document.getElementById('pVideo').value, // שדה חדש!
                 tech: {
                     coverage: document.getElementById('tCov').value,
                     drying: document.getElementById('tDry').value,
@@ -255,7 +318,7 @@
                 updatedAt: Date.now()
             };
 
-            if(!data.name || !data.image) return alert("חסר שם או תמונה!");
+            if(!data.name) return alert("חובה למלא שם מוצר");
 
             try {
                 if(id) {
@@ -264,11 +327,10 @@
                     data.createdAt = Date.now();
                     await addDoc(collection(db, "products"), data);
                 }
-                alert("נשמר! ✅");
                 loadInventory();
                 window.clearForm();
             } catch(e) {
-                alert("שגיאה: " + e.message);
+                alert("שגיאה בשמירה: " + e.message);
             }
         }
 
@@ -276,7 +338,7 @@
             document.getElementById('editId').value = "";
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.getElementById('previewImg').src = "https://placehold.co/400?text=New";
-            document.getElementById('imageGrid').classList.add('hidden');
+            updateVideoPreview("");
             updatePreview();
         }
 
