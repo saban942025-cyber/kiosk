@@ -1,4 +1,4 @@
-// === המפתחות שלך (ראשי + גיבויים) ===
+// === המפתחות שלך ===
 const API_KEYS_POOL = [
     "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", 
     "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U", 
@@ -14,16 +14,11 @@ const CX_IDS = ["3331a7d5c75e14f26", "635bc3eeee0194b16", "1340c66f5e73a4076"];
 
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-/**
- * 1. AI כללי: יצירת תיאור שיווקי ונתונים כלליים
- */
+// --- 1. יצירת תוכן בסיסי ---
 export async function askGeminiAdmin(productName) {
     for (const key of API_KEYS_POOL) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-        
-        // פרומפט כללי
-        const prompt = `Product: "${productName}". Return JSON (Hebrew): { "name": "${productName}", "brand": "Brand", "marketingDesc": "Short marketing description", "category": "sealing/glues/flooring/concrete" }`;
-
+        const prompt = `Product: "${productName}". Return JSON (Hebrew): { "name": "${productName}", "brand": "Brand", "marketingDesc": "Short description", "category": "sealing" }`;
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (res.ok) {
@@ -36,24 +31,37 @@ export async function askGeminiAdmin(productName) {
     return null;
 }
 
-/**
- * 2. AI טכני: חילוץ נתונים טכניים בלבד (חדש!) 📐
- */
-export async function extractTechnicalSpecs(productName) {
+// --- 2. שכתוב תוכן (AI Copywriter) - חדש! ✍️ ---
+export async function improveText(currentText, style) {
     for (const key of API_KEYS_POOL) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
         
-        // פרומפט "מהנדס" קפדני
-        const prompt = `
-        Act as a construction engineer. Product: "${productName}".
-        Extract technical data. If unknown, estimate based on similar Sika products.
-        Return JSON ONLY (Hebrew values, keep it short):
-        {
-            "coverage": "Consumption (e.g. 1.5 kg/m2)",
-            "drying": "Waiting time / Curing (e.g. 24 hours)",
-            "thickness": "Layer thickness (e.g. 2-5 mm)"
-        }`;
+        let instruction = "";
+        if (style === 'sales') instruction = "Make it more persuasive, energetic, and marketing-oriented (Hebrew).";
+        if (style === 'pro') instruction = "Make it formal, technical, and professional for contractors (Hebrew).";
+        if (style === 'short') instruction = "Summarize it into 2 punchy sentences (Hebrew).";
 
+        const prompt = `
+        Original Text: "${currentText}"
+        Instruction: ${instruction}
+        Return ONLY the new text.`;
+
+        try {
+            const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            if (res.ok) {
+                const data = await res.json();
+                return data.candidates[0].content.parts[0].text.trim();
+            }
+        } catch (e) {}
+    }
+    return currentText; // החזר מקור אם נכשל
+}
+
+// --- 3. חילוץ טכני ---
+export async function extractTechnicalSpecs(productName) {
+    for (const key of API_KEYS_POOL) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        const prompt = `Act as engineer. Product: "${productName}". Return JSON (Hebrew values): { "coverage": "Consumption", "drying": "Curing time", "thickness": "Thickness" }`;
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (res.ok) {
@@ -61,14 +69,12 @@ export async function extractTechnicalSpecs(productName) {
                 let text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
                 return JSON.parse(text);
             }
-        } catch (e) { console.error("Tech spec error", e); }
+        } catch (e) {}
     }
     return { coverage: "", drying: "", thickness: "" };
 }
 
-/**
- * 3. חיפוש תמונות
- */
+// --- 4. מדיה (תמונות + וידאו) ---
 export async function searchProductImages(query) {
     for (const key of API_KEYS_POOL) {
         const cx = getRandom(CX_IDS);
@@ -84,9 +90,6 @@ export async function searchProductImages(query) {
     return [{ link: "https://placehold.co/600x400?text=No+Image", title: "Placeholder" }];
 }
 
-/**
- * 4. חיפוש וידאו
- */
 export async function searchYouTubeVideos(query) {
     const q = query + " application sika tutorial";
     for (const key of API_KEYS_POOL) {
@@ -95,17 +98,16 @@ export async function searchYouTubeVideos(query) {
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
-                if (data.items) {
-                    return data.items.map(item => ({
-                        id: item.id.videoId,
-                        title: item.snippet.title,
-                        thumbnail: item.snippet.thumbnails.high.url,
-                        embed: `https://www.youtube.com/embed/${item.id.videoId}`
-                    }));
-                }
+                if (data.items) return data.items.map(item => ({
+                    id: item.id.videoId,
+                    title: item.snippet.title,
+                    thumbnail: item.snippet.thumbnails.high.url,
+                    embed: `https://www.youtube.com/embed/${item.id.videoId}`
+                }));
             }
         } catch (e) {}
     }
     return [];
 }
+
 export async function askProductExpert(p, q) { return ""; }
