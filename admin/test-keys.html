@@ -2,110 +2,68 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Sika Key Master v3 🗝️</title>
+    <title>Golden Key Test 🔑</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }</style>
 </head>
-<body class="max-w-5xl mx-auto">
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
     
-    <header class="mb-8 border-b border-gray-700 pb-4 flex justify-between items-center">
-        <div>
-            <h1 class="text-3xl font-black text-[#E3000F] flex items-center gap-2">
-                <i data-lucide="shield-check"></i> Sika Key Master
-            </h1>
-            <p class="text-gray-400">סריקת עומק ל-7 מפתחות (v1 + v1beta)</p>
-        </div>
-        <button onclick="startUltimateScan()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(37,99,235,0.5)] flex gap-2 transition hover:scale-105">
-            <i data-lucide="play"></i> הרץ בדיקה
-        </button>
-    </header>
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border border-gray-700">
+        <h1 class="text-2xl font-black text-yellow-500 mb-2">בדיקת מפתח הזהב</h1>
+        <p class="font-mono text-xs text-gray-400 mb-6 bg-black p-2 rounded">AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U</p>
 
-    <div class="grid grid-cols-1 gap-4" id="resultsArea">
-        <div class="text-center text-gray-500 py-10 bg-gray-900 rounded-xl border border-gray-800">
-            המתן לפקודה...
+        <div id="status" class="mb-6">
+            <button onclick="testKey()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition flex items-center gap-2 mx-auto">
+                <i data-lucide="zap"></i> בדוק יכולות AI
+            </button>
         </div>
+
+        <div id="log" class="text-left text-xs font-mono bg-black p-4 rounded h-32 overflow-auto text-green-400 hidden"></div>
     </div>
 
     <script>
         lucide.createIcons();
+        const KEY = "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U";
 
-        // === רשימת המפתחות החדשה ===
-        const apiKeys = [
-            "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
-            "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
-            "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
-            "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
-            "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
-            "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U",
-            "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
-        ];
+        async function testKey() {
+            const btn = document.querySelector('button');
+            const log = document.getElementById('log');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> מתחבר למוח...`;
+            log.classList.remove('hidden');
+            log.innerHTML = "> מתחיל בדיקה...\n";
 
-        // בדיקת שתי הכתובות ושני המודלים המובילים
-        const endpoints = [
-            { ver: "v1beta", model: "gemini-1.5-flash" },
-            { ver: "v1", model: "gemini-pro" } // הגיבוי היציב ביותר
-        ];
-
-        async function startUltimateScan() {
-            const container = document.getElementById('resultsArea');
-            container.innerHTML = '';
-
-            for (const key of apiKeys) {
-                // כרטיס למפתח
-                const card = document.createElement('div');
-                card.className = "bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-col gap-3";
-                
-                // כותרת
-                card.innerHTML = `
-                    <div class="flex justify-between items-center border-b border-gray-700 pb-2">
-                        <div class="font-mono text-yellow-400 font-bold">${key}</div>
-                        <div id="status-${key.substring(0,5)}" class="text-xs text-gray-500"><i data-lucide="loader-2" class="animate-spin inline"></i> בודק...</div>
-                    </div>
-                    <div class="flex gap-2" id="badges-${key.substring(0,5)}"></div>
-                `;
-                container.appendChild(card);
-                lucide.createIcons();
-
-                let foundWorking = false;
-
-                // בדיקה כפולה (גם חדש וגם ישן)
-                for (const ep of endpoints) {
-                    const isWorking = await checkEndpoint(key, ep.ver, ep.model);
-                    
-                    const badge = document.createElement('span');
-                    const color = isWorking ? "bg-green-900/50 text-green-400 border-green-700" : "bg-red-900/20 text-red-500/50 border-red-900/20 grayscale opacity-50";
-                    const icon = isWorking ? "check" : "x";
-                    
-                    badge.className = `px-3 py-1 rounded text-xs font-bold border flex items-center gap-2 ${color}`;
-                    badge.innerHTML = `<i data-lucide="${icon}" size="14"></i> ${ep.ver}/${ep.model}`;
-                    
-                    document.getElementById(`badges-${key.substring(0,5)}`).appendChild(badge);
-                    
-                    if(isWorking) foundWorking = true;
-                }
-
-                // סיכום
-                const finalStatus = document.getElementById(`status-${key.substring(0,5)}`);
-                if(foundWorking) {
-                    finalStatus.innerHTML = `<span class="text-green-400 font-bold">✅ מאושר לשימוש</span>`;
-                } else {
-                    finalStatus.innerHTML = `<span class="text-red-500 font-bold">❌ חסום/שגיאה</span>`;
-                }
-                lucide.createIcons();
-            }
-        }
-
-        async function checkEndpoint(key, version, model) {
-            const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`;
+            // נבדוק מול המודל היציב ביותר (v1/gemini-pro)
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${KEY}`;
+            
             try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: "כתוב מילה אחת: הצלחה" }] }] 
+                    })
                 });
-                return res.ok;
-            } catch (e) { return false; }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const text = data.candidates[0].content.parts[0].text;
+                    log.innerHTML += `> תשובת גוגל: "${text}"\n`;
+                    log.innerHTML += `> ✅ המפתח תקין לחלוטין ל-AI!`;
+                    status.innerHTML = `<div class="text-green-500 font-bold text-xl">✅ עובד פיקס!</div><p class="text-gray-400 text-sm mt-2">המפתח הזה יכול גם לחפש וגם לכתוב.</p>`;
+                } else {
+                    log.innerHTML += `> ❌ שגיאה: ${response.status}\n`;
+                    if(response.status === 403) log.innerHTML += `> המפתח חסום ל-AI (Generative Language API לא מופעל).`;
+                    if(response.status === 404) log.innerHTML += `> המודל לא נמצא (נסה endpoint אחר).`;
+                    status.innerHTML = `<div class="text-red-500 font-bold text-xl">❌ נכשל ב-AI</div>`;
+                }
+            } catch (e) {
+                log.innerHTML += `> ❌ שגיאה: ${e.message}`;
+                status.innerHTML = `<div class="text-red-500 font-bold text-xl">❌ שגיאת רשת</div>`;
+            }
+            lucide.createIcons();
         }
     </script>
 </body>
