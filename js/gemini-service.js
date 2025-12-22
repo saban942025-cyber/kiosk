@@ -4,6 +4,8 @@ const API_KEYS_POOL = [
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
     "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
     "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
+    "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
+    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0",
     "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
 
