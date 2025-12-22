@@ -21,39 +21,18 @@
             </h2>
             <div id="geminiResults" class="space-y-2 text-sm"></div>
         </div>
-
-        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
-            <h2 class="text-xl font-bold mb-4 flex justify-between">
-                <span>מנועי חיפוש (CX IDs)</span>
-                <button onclick="testSearchCX()" class="bg-purple-600 px-4 py-1 rounded text-sm hover:bg-purple-500">התחל בדיקה</button>
-            </h2>
-            <div id="cxResults" class="space-y-2 text-sm"></div>
-            <div class="text-xs text-gray-500 mt-2">* דורש לפחות מפתח AI אחד תקין כדי לבדוק.</div>
-        </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // המאגר שהבאת
         const apiKeys = [
-    "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
-    "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
-    "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
-    "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
-    "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
-    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0",
-    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
-];
-
-
-        const cxIds = [
-            "3331a7d5c75e14f26",
-            "635bc3eeee0194b16",
-            "1340c66f5e73a4076"
+            "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
+            "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
+            "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
+            "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
+            "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
         ];
-
-        let validApiKey = null; // ישמור מפתח תקין לבדיקת החיפוש
 
         async function testGeminiKeys() {
             const container = document.getElementById('geminiResults');
@@ -61,17 +40,18 @@
             
             let html = '';
             
+            // רשימת מודלים מהיציב לחדש
+            const modelsToTest = ["gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-pro"];
+
             for (const key of apiKeys) {
                 const start = Date.now();
-                const status = await checkKey(key);
+                const status = await checkKey(key, modelsToTest);
                 const time = Date.now() - start;
                 
                 let color = status.ok ? 'text-green-400' : 'text-red-400';
                 let icon = status.ok ? 'check-circle' : 'x-circle';
-                let msg = status.ok ? `פעיל (${status.model}) - ${time}ms` : `שגיאה: ${status.error}`;
+                let msg = status.ok ? `פעיל (${status.model}) - ${time}ms` : `נכשל: ${status.error}`;
                 
-                if(status.ok && !validApiKey) validApiKey = key;
-
                 html += `
                     <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-700">
                         <div class="font-mono text-xs text-gray-300 w-1/3 truncate">${key}</div>
@@ -84,10 +64,7 @@
             lucide.createIcons();
         }
 
-        async function checkKey(key) {
-            // מנסים קודם את המודל החזק
-            const models = ["gemini-2.0-flash-exp", "gemini-1.5-flash"];
-            
+        async function checkKey(key, models) {
             for (const model of models) {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
                 try {
@@ -97,39 +74,10 @@
                         body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
                     });
                     if (res.ok) return { ok: true, model: model };
+                    if (res.status === 429) continue; // אם עמוס, נסה מודל הבא
                 } catch (e) {}
             }
-            return { ok: false, error: "לא תקין / מכסה מלאה" };
-        }
-
-        async function testSearchCX() {
-            if(!validApiKey) return alert("קודם כל תריץ בדיקת מפתחות AI כדי למצוא מפתח תקין לביצוע החיפוש.");
-            
-            const container = document.getElementById('cxResults');
-            container.innerHTML = '<div class="text-gray-400">בודק...</div>';
-            
-            let html = '';
-            for (const cx of cxIds) {
-                const url = `https://www.googleapis.com/customsearch/v1?q=Sika&cx=${cx}&key=${validApiKey}&num=1`;
-                let status = { ok: false };
-                try {
-                    const res = await fetch(url);
-                    if(res.ok) status = { ok: true };
-                } catch(e) {}
-
-                let color = status.ok ? 'text-green-400' : 'text-red-400';
-                let icon = status.ok ? 'check-circle' : 'x-circle';
-                
-                html += `
-                    <div class="flex items-center justify-between bg-gray-900 p-3 rounded border border-gray-700">
-                        <div class="font-mono text-xs text-gray-300">${cx}</div>
-                        <div class="${color} flex items-center gap-2">
-                            <span>${status.ok ? 'מחובר' : 'שגיאה'}</span> <i data-lucide="${icon}" size="16"></i>
-                        </div>
-                    </div>`;
-            }
-            container.innerHTML = html;
-            lucide.createIcons();
+            return { ok: false, error: "כל המודלים נכשלו (404/429)" };
         }
     </script>
 </body>
