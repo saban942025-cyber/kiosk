@@ -1,12 +1,12 @@
-// === מאגר מפתחות API ===
-const API_KEYS = [
-    "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U",
-    "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
-    "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
-    "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
-    "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
-    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
-];
+// === הגדרת המפתחות ===
+// 1. המפתח הראשי (של הפרויקט) - עדיפות ראשונה
+const MAIN_KEY = "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo";
+
+// 2. מפתח גיבוי (Golden Key) - למקרה שהראשון נופל
+const BACKUP_KEY = "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U";
+
+// מאגר המפתחות המלא (סדר חשיבות: ראשי -> גיבוי)
+const API_KEYS_POOL = [MAIN_KEY, BACKUP_KEY];
 
 const CX_IDS = [
     "3331a7d5c75e14f26",
@@ -17,53 +17,114 @@ const CX_IDS = [
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 /**
- * פונקציה לחיפוש 6 תמונות מוצר בגוגל (עם מנגנון גיבוי)
+ * 1. מוח AI: יצירת תיאורים
+ * המערכת מנסה את המפתח הראשי, ורק אם נכשלת עוברת לגיבוי.
+ */
+export async function askGeminiAdmin(productName) {
+    
+    // לולאה שעוברת על המפתחות לפי הסדר (0 = ראשי, 1 = גיבוי)
+    for (const key of API_KEYS_POOL) {
+        // משתמשים ב-Gemini 1.5 Flash (הכי מהיר ויעיל)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        
+        const prompt = `
+        You are a construction marketing expert.
+        Product: "${productName}"
+        Return JSON ONLY (Hebrew values):
+        {
+            "name": "Full Name",
+            "brand": "Brand",
+            "marketingDesc": "Short sales pitch (Hebrew)",
+            "category": "sealing/glues/flooring/concrete",
+            "tech": { "coverage": "X kg/m2", "drying": "X hours", "thickness": "X mm" }
+        }`;
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            // אם נכשל (למשל 429 או 403), נדלג למפתח הבא בלולאה
+            if (!response.ok) {
+                console.warn(`Key ...${key.slice(-4)} failed. Switching to backup.`);
+                continue; 
+            }
+
+            const data = await response.json();
+            if (!data.candidates) continue;
+
+            let text = data.candidates[0].content.parts[0].text;
+            text = text.replace(/```json|```/g, '').trim();
+            return JSON.parse(text); // הצלחה!
+
+        } catch (error) {
+            console.error("Connection Error:", error);
+        }
+    }
+
+    // אם שני המפתחות נכשלו
+    return {
+        name: productName,
+        brand: "",
+        marketingDesc: "נא למלא ידנית (תקלה בחיבור ל-AI)",
+        category: "sealing",
+        tech: { coverage: "", drying: "", thickness: "" }
+    };
+}
+
+/**
+ * 2. חיפוש תמונות
+ * גם כאן - מנסים את הראשי, ואם לא עובד עוברים לגיבוי
  */
 export async function searchProductImages(query) {
-    // ננסה עד 3 שילובים שונים
-    for (let i = 0; i < 3; i++) {
-        const apiKey = getRandom(API_KEYS);
-        const cx = CX_IDS[i % CX_IDS.length]; 
+    for (const key of API_KEYS_POOL) {
+        // בחיפוש תמונות נבחר CX רנדומלי
+        const cx = getRandom(CX_IDS);
         
-        const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${apiKey}&searchType=image&num=6&imgSize=large`;
+        const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${key}&searchType=image&num=6&imgSize=large`;
 
         try {
             const response = await fetch(url);
             
-            // אם קיבלנו 403 (Forbidden) - המפתח לא מאושר לחיפוש
-            if (response.status === 403) {
-                console.warn(`Key blocked for Search API (403). Ensure 'Custom Search API' is ENABLED in Google Cloud Console.`);
-                continue; 
+            if (!response.ok) {
+                console.warn(`Image Search failed on key ...${key.slice(-4)}. Trying backup.`);
+                continue;
             }
-
-            if (!response.ok) continue;
 
             const data = await response.json();
+            if (data.items) return data.items.map(item => ({ link: item.link, title: item.title }));
             
-            if (data.items && data.items.length > 0) {
-                return data.items.map(item => ({
-                    link: item.link,
-                    title: item.title
-                }));
-            }
-        } catch (error) {
-            console.error("Search Error:", error);
-        }
+        } catch (error) { }
     }
-
-    // === מנגנון גיבוי (Fallback) ===
-    // אם הכל נכשל (בגלל 403), נחזיר תמונות דמו כדי שהממשק יעבוד
-    console.warn("Using Fallback Images due to API Error");
+    
+    // Fallback אם הכל נכשל
     return [
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+1`, title: "Demo 1" },
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+2`, title: "Demo 2" },
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+3`, title: "Demo 3" },
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+4`, title: "Demo 4" },
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+5`, title: "Demo 5" },
-        { link: `https://placehold.co/600x400?text=${encodeURIComponent(query)}+6`, title: "Demo 6" }
+        { link: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png", title: "Sika Logo" },
+        { link: "https://placehold.co/600x400?text=Manual+Upload", title: "No Image" }
     ];
 }
 
-// פונקציות ישנות (ריקות כדי למנוע שגיאות)
-export async function askGeminiAdmin(q) { return null; }
-export async function askProductExpert(p, q) { return "השירות אינו זמין כרגע."; }
+/**
+ * 3. המומחה (צ'אט)
+ */
+export async function askProductExpert(product, question) {
+    const key = API_KEYS_POOL[0]; // לצ'אט ננסה רק את הראשי כדי לחסוך קריאות
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    
+    const context = `Product: ${product.name}. Tech: ${JSON.stringify(product.tech)}. Q: "${question}". Answer in Hebrew.`;
+
+    try {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
+        });
+        if(res.ok) {
+            const data = await res.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+    } catch (e) {}
+    return "המומחה אינו זמין כרגע.";
+}
