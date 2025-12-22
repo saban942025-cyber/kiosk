@@ -2,26 +2,26 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Sika Key Master 🗝️</title>
+    <title>Sika Key Master v3 🗝️</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }</style>
 </head>
-<body class="max-w-4xl mx-auto">
+<body class="max-w-5xl mx-auto">
     
     <header class="mb-8 border-b border-gray-700 pb-4 flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-black text-blue-500 flex items-center gap-2">
-                <i data-lucide="cpu"></i> Sika Key Master (v2)
+            <h1 class="text-3xl font-black text-[#E3000F] flex items-center gap-2">
+                <i data-lucide="shield-check"></i> Sika Key Master
             </h1>
-            <p class="text-gray-400">בדיקת עומסים ל-7 מפתחות</p>
+            <p class="text-gray-400">סריקת עומק ל-7 מפתחות (v1 + v1beta)</p>
         </div>
-        <button onclick="startDeepScan()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg flex gap-2">
-            <i data-lucide="play"></i> הרץ סריקה
+        <button onclick="startUltimateScan()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(37,99,235,0.5)] flex gap-2 transition hover:scale-105">
+            <i data-lucide="play"></i> הרץ בדיקה
         </button>
     </header>
 
-    <div class="space-y-4" id="resultsArea">
+    <div class="grid grid-cols-1 gap-4" id="resultsArea">
         <div class="text-center text-gray-500 py-10 bg-gray-900 rounded-xl border border-gray-800">
             המתן לפקודה...
         </div>
@@ -30,7 +30,7 @@
     <script>
         lucide.createIcons();
 
-        // === רשימת המפתחות המעודכנת ===
+        // === רשימת המפתחות החדשה ===
         const apiKeys = [
             "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
             "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
@@ -41,67 +41,63 @@
             "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
         ];
 
-        // מודלים לבדיקה
-        const modelsToProbe = [
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-1.0-pro",
-            "gemini-pro"
+        // בדיקת שתי הכתובות ושני המודלים המובילים
+        const endpoints = [
+            { ver: "v1beta", model: "gemini-1.5-flash" },
+            { ver: "v1", model: "gemini-pro" } // הגיבוי היציב ביותר
         ];
 
-        async function startDeepScan() {
+        async function startUltimateScan() {
             const container = document.getElementById('resultsArea');
             container.innerHTML = '';
 
             for (const key of apiKeys) {
-                // יצירת כרטיס למפתח
+                // כרטיס למפתח
                 const card = document.createElement('div');
-                card.className = "bg-gray-900 p-4 rounded-xl border border-gray-700 flex flex-col gap-3";
+                card.className = "bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-col gap-3";
                 
-                const header = document.createElement('div');
-                header.className = "flex justify-between items-center border-b border-gray-800 pb-2";
-                header.innerHTML = `
-                    <div class="font-mono text-yellow-500 text-xs font-bold tracking-wider">${key}</div>
-                    <div id="status-${key.substring(0,5)}" class="text-xs text-gray-500 flex items-center gap-1"><i data-lucide="loader-2" class="animate-spin" size="12"></i> סורק...</div>
+                // כותרת
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                        <div class="font-mono text-yellow-400 font-bold">${key}</div>
+                        <div id="status-${key.substring(0,5)}" class="text-xs text-gray-500"><i data-lucide="loader-2" class="animate-spin inline"></i> בודק...</div>
+                    </div>
+                    <div class="flex gap-2" id="badges-${key.substring(0,5)}"></div>
                 `;
-                card.appendChild(header);
-
-                const badges = document.createElement('div');
-                badges.className = "flex flex-wrap gap-2";
-                badges.id = `badges-${key.substring(0,5)}`;
-                card.appendChild(badges);
-
                 container.appendChild(card);
                 lucide.createIcons();
 
                 let foundWorking = false;
-                
-                // בדיקת כל המודלים עבור המפתח הזה
-                for (const model of modelsToProbe) {
-                    const isWorking = await checkModel(key, model);
+
+                // בדיקה כפולה (גם חדש וגם ישן)
+                for (const ep of endpoints) {
+                    const isWorking = await checkEndpoint(key, ep.ver, ep.model);
                     
                     const badge = document.createElement('span');
-                    badge.className = `px-2 py-1 rounded text-[10px] font-bold border flex items-center gap-1 ${isWorking ? 'bg-green-900/40 text-green-400 border-green-800' : 'bg-red-900/20 text-red-500/50 border-red-900/20 grayscale opacity-50'}`;
-                    badge.innerHTML = isWorking ? `<i data-lucide="check" size="10"></i> ${model}` : `<i data-lucide="x" size="10"></i> ${model}`;
+                    const color = isWorking ? "bg-green-900/50 text-green-400 border-green-700" : "bg-red-900/20 text-red-500/50 border-red-900/20 grayscale opacity-50";
+                    const icon = isWorking ? "check" : "x";
+                    
+                    badge.className = `px-3 py-1 rounded text-xs font-bold border flex items-center gap-2 ${color}`;
+                    badge.innerHTML = `<i data-lucide="${icon}" size="14"></i> ${ep.ver}/${ep.model}`;
                     
                     document.getElementById(`badges-${key.substring(0,5)}`).appendChild(badge);
                     
                     if(isWorking) foundWorking = true;
                 }
 
-                const statusEl = document.getElementById(`status-${key.substring(0,5)}`);
+                // סיכום
+                const finalStatus = document.getElementById(`status-${key.substring(0,5)}`);
                 if(foundWorking) {
-                    statusEl.innerHTML = `<span class="text-green-500 font-bold">פעיל ✅</span>`;
+                    finalStatus.innerHTML = `<span class="text-green-400 font-bold">✅ מאושר לשימוש</span>`;
                 } else {
-                    statusEl.innerHTML = `<span class="text-red-500 font-bold">לא תקין ❌</span>`;
+                    finalStatus.innerHTML = `<span class="text-red-500 font-bold">❌ חסום/שגיאה</span>`;
                 }
                 lucide.createIcons();
             }
         }
 
-        async function checkModel(key, model) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        async function checkEndpoint(key, version, model) {
+            const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`;
             try {
                 const res = await fetch(url, {
                     method: 'POST',
