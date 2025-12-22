@@ -1,6 +1,6 @@
-// === המפתחות שלך ===
+// === Sika API Keys Pool ===
 const API_KEYS_POOL = [
-    "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", 
+    "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", // ראשי
     "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U", 
     "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
@@ -14,37 +14,56 @@ const CX_IDS = ["3331a7d5c75e14f26", "635bc3eeee0194b16", "1340c66f5e73a4076"];
 
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// --- 1. יצירת תוכן בסיסי ---
+// --- 1. AI שיווקי: יצירת תיאור כללי ---
 export async function askGeminiAdmin(productName) {
+    // שינוי קריטי: שימוש ב-gemini-pro היציב
+    const MODEL = "gemini-pro"; 
+    
     for (const key of API_KEYS_POOL) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-        const prompt = `Product: "${productName}". Return JSON (Hebrew): { "name": "${productName}", "brand": "Brand", "marketingDesc": "Short description", "category": "sealing" }`;
+        // שינוי קריטי: כתובת v1beta שהיא הכי סלחנית
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
+        
+        const prompt = `
+        Product: "${productName}". 
+        Return JSON ONLY (Hebrew values): 
+        { 
+            "name": "${productName}", 
+            "brand": "Sika", 
+            "marketingDesc": "Short persuasive description (Hebrew)", 
+            "category": "sealing" 
+        }`;
+
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            
+            if (res.status === 404) {
+                console.warn(`Model not found with key ending in ...${key.slice(-4)}. Trying next.`);
+                continue;
+            }
+
             if (res.ok) {
                 const data = await res.json();
                 let text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
                 return JSON.parse(text);
             }
-        } catch (e) {}
+        } catch (e) { console.warn("AI Marketing Error", e); }
     }
     return null;
 }
 
-// --- 2. שכתוב תוכן (AI Copywriter) - חדש! ✍️ ---
+// --- 2. שכתוב תוכן (AI Copywriter) ---
 export async function improveText(currentText, style) {
+    const MODEL = "gemini-pro";
+
     for (const key of API_KEYS_POOL) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
         
         let instruction = "";
-        if (style === 'sales') instruction = "Make it more persuasive, energetic, and marketing-oriented (Hebrew).";
-        if (style === 'pro') instruction = "Make it formal, technical, and professional for contractors (Hebrew).";
-        if (style === 'short') instruction = "Summarize it into 2 punchy sentences (Hebrew).";
+        if (style === 'sales') instruction = "Make it persuasive and marketing-oriented (Hebrew).";
+        if (style === 'pro') instruction = "Make it professional and technical (Hebrew).";
+        if (style === 'short') instruction = "Summarize it (Hebrew).";
 
-        const prompt = `
-        Original Text: "${currentText}"
-        Instruction: ${instruction}
-        Return ONLY the new text.`;
+        const prompt = `Original: "${currentText}". Instruction: ${instruction}. Return ONLY new text.`;
 
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
@@ -54,14 +73,21 @@ export async function improveText(currentText, style) {
             }
         } catch (e) {}
     }
-    return currentText; // החזר מקור אם נכשל
+    return currentText;
 }
 
 // --- 3. חילוץ טכני ---
 export async function extractTechnicalSpecs(productName) {
+    const MODEL = "gemini-pro";
+
     for (const key of API_KEYS_POOL) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-        const prompt = `Act as engineer. Product: "${productName}". Return JSON (Hebrew values): { "coverage": "Consumption", "drying": "Curing time", "thickness": "Thickness" }`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
+        
+        const prompt = `
+        Act as engineer. Product: "${productName}".
+        Extract technical data. Return JSON (Hebrew values):
+        { "coverage": "Consumption", "drying": "Curing time", "thickness": "Layer thickness" }`;
+
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (res.ok) {
