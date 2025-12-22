@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root { --sika-red: #E3000F; --sika-yellow: #FFC500; --dark: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 600px; margin: 0; }
+        
+        /* Kiosk Body */
+        .kiosk-frame {
+            width: 320px; height: 580px; background: #000; border-radius: 30px; border: 8px solid #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .camera-hole { width: 12px; height: 12px; background: #111; border-radius: 50%; position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 10; border: 1px solid #444; }
+        
+        /* Screen UI */
+        .screen { flex: 1; background: linear-gradient(135deg, #1e293b, #0f172a); padding: 20px; color: white; display: flex; flex-direction: column; padding-top: 40px; }
+        .sika-logo { font-size: 28px; font-weight: 900; font-style: italic; color: white; margin-bottom: 5px; }
+        .sika-logo span { color: var(--sika-red); }
+        .hero-text { font-size: 14px; opacity: 0.8; margin-bottom: 20px; }
+        
+        .product-card { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--sika-yellow); display: flex; gap: 10px; align-items: center; }
+        .prod-img { width: 40px; height: 40px; background: white; border-radius: 5px; }
+        
+        .action-btn { 
+            background: var(--sika-red); color: white; border: none; padding: 15px; 
+            border-radius: 50px; font-weight: bold; font-size: 16px; margin-top: auto; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(227, 0, 15, 0.4); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .action-btn:active { transform: scale(0.95); }
+
+        /* Printer Slot & Bon Animation */
+        .printer-slot { height: 12px; background: #222; margin: 0 40px 20px 40px; border-radius: 10px; position: relative; z-index: 5; }
+        
+        .bon-paper {
+            width: 200px; background: #fff; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(-100%);
+            padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Courier New', monospace; font-size: 10px; color: black;
+            transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1; opacity: 0;
+        }
+        .bon-paper.printing { transform: translateX(-50%) translateY(80%); opacity: 1; }
+        
+        .qr-mock { width: 60px; height: 60px; background: #000; margin: 10px auto; }
+        .cut-line { border-top: 1px dashed #ccc; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="kiosk-frame">
+        <div class="camera-hole" title="AI Vision Camera"></div>
+        
+        <div class="screen">
+            <div class="sika-logo">SIKA<span>-Ai</span></div>
+            <div class="hero-text">המומחה הדיגיטלי שלך בחנות.<br>סרוק מוצר או שאל שאלה.</div>
+            
+            <div class="product-card">
+                <div class="prod-img"></div>
+                <div>
+                    <div style="font-weight:bold">Sika TopSeal 107</div>
+                    <div style="font-size:10px">איטום צמנטי גמיש דו-רכיבי</div>
+                </div>
+            </div>
+
+            <div class="product-card" style="border-left-color: #E3000F">
+                <div class="prod-img"></div>
+                <div>
+                    <div style="font-weight:bold">סרטון הדרכה</div>
+                    <div style="font-size:10px">יישום במקלחות (02:30)</div>
+                </div>
+            </div>
+
+            <button class="action-btn" onclick="printBon()">
+                <span>🖨️</span> הדפס ייעוץ וקח לדרך
+            </button>
+        </div>
+
+        <div class="bon-paper" id="bon">
+            <div style="text-align:center; font-weight:bold; font-size:14px; margin-bottom:5px">SIKA PROJECT</div>
+            <div style="text-align:center">תאריך: 22/12/2025</div>
+            <div class="cut-line"></div>
+            <div><b>מוצר:</b> Sika TopSeal 107</div>
+            <div><b>כמות מומלצת:</b> 3 שקים (לפי 15 מ"ר)</div>
+            <div class="cut-line"></div>
+            <div style="font-weight:bold; text-align:center">סרוק להמשך באפליקציה</div>
+            <div class="qr-mock"></div>
+            <div style="text-align:center; font-size:9px">המשך צ'אט עם המומחה<br>בוואטסאפ או באפליקציה</div>
+            <div class="cut-line"></div>
+            <div style="text-align:center">תודה שבחרת גילאר!</div>
+        </div>
+
+        <div class="printer-slot"></div>
+    </div>
+
+    <script>
+        function printBon() {
+            const bon = document.getElementById('bon');
+            bon.classList.remove('printing');
+            void bon.offsetWidth; // trigger reflow
+            bon.classList.add('printing');
+        }
+    </script>
+</body>
+</html>
