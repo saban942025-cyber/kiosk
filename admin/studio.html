@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Sika Studio Master 🚀</title>
+    <title>Sika Studio Pro 2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
@@ -10,16 +10,15 @@
         body { font-family: 'Heebo', sans-serif; background: #0f172a; color: white; height: 100vh; overflow: hidden; }
         .input-dark { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; outline: none; transition: 0.2s; }
         .input-dark:focus { border-color: #E3000F; }
-        
-        /* Media Cards */
         .media-card { cursor: pointer; transition: 0.2s; border: 2px solid transparent; position: relative; overflow: hidden; }
         .media-card:hover { transform: scale(1.05); z-index: 10; border-color: #3b82f6; }
         .media-card.selected { border-color: #E3000F; box-shadow: 0 0 15px rgba(227, 0, 15, 0.3); }
-        
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        
+        /* Tooltip style */
+        .tooltip { position: relative; }
+        .tooltip:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 4px 8px; font-size: 10px; border-radius: 4px; white-space: nowrap; margin-bottom: 5px; }
     </style>
 </head>
 <body class="flex">
@@ -27,7 +26,7 @@
     <div class="w-72 bg-gray-900 border-l border-gray-800 flex flex-col z-20 shadow-xl">
         <div class="p-5 border-b border-gray-800 bg-gray-900">
             <h1 class="text-3xl font-black text-[#E3000F] tracking-tighter italic">SIKA STUDIO</h1>
-            <p class="text-xs text-gray-500 mt-1">ניהול קטלוג חכם</p>
+            <p class="text-xs text-gray-500 mt-1">גרסת פרו 2.0</p>
         </div>
         <div class="p-3 bg-gray-900 sticky top-0">
             <button onclick="clearForm()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2">
@@ -42,65 +41,58 @@
             
             <div class="w-2/3 space-y-6">
                 
-                <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                    
-                    <div class="flex gap-3 mb-5">
-                        <div class="relative flex-1">
-                            <i data-lucide="search" class="absolute right-3 top-3 text-gray-500" size="20"></i>
-                            <input id="searchQuery" class="input-dark font-bold text-lg pr-10" placeholder="הקלד שם מוצר לאיתור אוטומטי (למשל: Sika TopSeal 107)">
-                        </div>
-                        <button onclick="runAllSearches()" class="bg-[#E3000F] hover:bg-red-600 text-white px-6 rounded-lg font-bold shadow-lg transition flex items-center gap-2">
-                            <i data-lucide="sparkles"></i> חפש הכל
+                <div class="bg-gray-800 p-3 rounded-xl border border-gray-700 flex justify-between items-center shadow-lg">
+                    <div class="flex gap-2">
+                        <button onclick="duplicateProduct()" class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg tooltip" data-tip="שכפל מוצר">
+                            <i data-lucide="copy" size="18"></i>
+                        </button>
+                        <button onclick="generateQR()" class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg tooltip" data-tip="צור קוד QR">
+                            <i data-lucide="qr-code" size="18"></i>
+                        </button>
+                        <button onclick="shareWhatsApp()" class="bg-green-600 hover:bg-green-500 text-white p-2 rounded-lg tooltip" data-tip="שלח בוואטסאפ">
+                            <i data-lucide="message-circle" size="18"></i>
                         </button>
                     </div>
+                    <div class="text-xs text-gray-500 font-mono" id="productIdDisplay">ID: New</div>
+                </div>
 
-                    <div class="mb-4">
-                        <h3 class="text-[10px] text-gray-400 font-bold uppercase mb-2 flex justify-between">
-                            <span>תמונות (Google)</span>
-                            <span class="text-gray-600 text-[9px]">לחץ לבחירה</span>
-                        </h3>
-                        <div id="imageGrid" class="grid grid-cols-5 gap-3 h-24 content-start">
-                            <div class="col-span-5 text-center text-gray-600 text-sm py-8 border border-dashed border-gray-700 rounded-lg">המתן לחיפוש...</div>
-                        </div>
+                <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                    <div class="flex gap-3 mb-5">
+                        <input id="searchQuery" class="input-dark font-bold text-lg" placeholder="שם מוצר לאיתור אוטומטי...">
+                        <button onclick="runAllSearches()" class="bg-[#E3000F] hover:bg-red-600 text-white px-6 rounded-lg font-bold shadow-lg transition flex items-center gap-2">
+                            <i data-lucide="sparkles"></i> חפש
+                        </button>
                     </div>
-
-                    <div>
-                        <h3 class="text-[10px] text-gray-400 font-bold uppercase mb-2">וידאו (YouTube)</h3>
-                        <div id="videoGrid" class="grid grid-cols-4 gap-3 h-24 content-start">
-                            <div class="col-span-4 text-center text-gray-600 text-sm py-8 border border-dashed border-gray-700 rounded-lg">המתן לחיפוש...</div>
-                        </div>
-                    </div>
+                    <div id="imageGrid" class="grid grid-cols-5 gap-3 h-24 content-start mb-4"></div>
+                    <div id="videoGrid" class="grid grid-cols-4 gap-3 h-24 content-start"></div>
                 </div>
 
                 <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-md">
                     <input type="hidden" id="editId">
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-xs text-gray-500 mb-1 block">שם המוצר</label>
-                            <input id="pName" class="input-dark font-bold text-lg border-l-4 border-l-blue-500" placeholder="שם מלא">
-                        </div>
+                        <input id="pName" class="input-dark font-bold text-lg border-l-4 border-l-blue-500" placeholder="שם מלא">
                         
                         <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">מותג</label>
-                                <input id="pBrand" class="input-dark" placeholder="Sika / Brand">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 mb-1 block">קטגוריה</label>
-                                <select id="pCat" class="input-dark">
-                                    <option value="sealing">איטום (Sealing)</option>
-                                    <option value="glues">דבקים (Glues)</option>
-                                    <option value="flooring">ריצוף (Flooring)</option>
-                                    <option value="concrete">בטון (Concrete)</option>
-                                    <option value="paint">צבע (Paint)</option>
-                                </select>
-                            </div>
+                            <input id="pBrand" class="input-dark" placeholder="מותג">
+                            <select id="pCat" class="input-dark">
+                                <option value="sealing">איטום</option>
+                                <option value="glues">דבקים</option>
+                                <option value="flooring">ריצוף</option>
+                                <option value="concrete">בטון</option>
+                            </select>
                         </div>
 
                         <div>
-                            <label class="text-xs text-gray-500 mb-1 block">תיאור שיווקי</label>
-                            <textarea id="pDesc" class="input-dark h-24 text-sm leading-relaxed" placeholder="תיאור שימכר את המוצר..."></textarea>
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="text-xs text-gray-500">תיאור שיווקי</label>
+                                <div class="flex gap-1">
+                                    <button onclick="rewrite('sales')" class="text-[10px] bg-purple-900 text-purple-200 px-2 py-0.5 rounded border border-purple-700 hover:bg-purple-800">🔥 שיווקי</button>
+                                    <button onclick="rewrite('pro')" class="text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded border border-blue-700 hover:bg-blue-800">👔 מקצועי</button>
+                                    <button onclick="rewrite('short')" class="text-[10px] bg-gray-700 text-gray-300 px-2 py-0.5 rounded border border-gray-600 hover:bg-gray-600">✂️ קצר</button>
+                                </div>
+                            </div>
+                            <textarea id="pDesc" class="input-dark h-24 text-sm leading-relaxed" placeholder="..."></textarea>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
@@ -112,97 +104,54 @@
 
                 <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800 relative shadow-inner">
                     <div class="flex justify-between items-center mb-4">
-                        <label class="text-sm font-bold text-gray-300 flex items-center gap-2">
-                            <i data-lucide="ruler" class="text-blue-500"></i> מפרט טכני
-                        </label>
+                        <label class="text-sm font-bold text-gray-300 flex items-center gap-2"><i data-lucide="ruler" class="text-blue-500"></i> מפרט טכני</label>
                         <button onclick="fillTechData()" class="bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition border border-blue-500/30">
-                            <i data-lucide="sparkles" size="12"></i> מילוי אוטומטי (AI)
+                            <i data-lucide="sparkles" size="12"></i> מילוי אוטומטי
                         </button>
                     </div>
-                    
                     <div class="grid grid-cols-3 gap-5">
                         <div class="group">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-[11px] text-gray-500 font-medium">כיסוי / צריכה</span>
-                                <button onclick="smartSearch('coverage')" class="text-gray-600 hover:text-white transition bg-gray-800 p-1 rounded hover:bg-blue-600" title="חפש נתוני צריכה בגוגל">
-                                    <i data-lucide="search" size="10"></i>
-                                </button>
-                            </div>
-                            <input id="tCov" class="input-dark text-sm border-gray-800 focus:border-blue-500" placeholder="1.5 ק''ג למ''ר">
+                            <div class="flex justify-between items-center mb-1.5"><span class="text-[11px] text-gray-500">כיסוי</span><button onclick="smartSearch('coverage')" class="text-gray-600 hover:text-white"><i data-lucide="search" size="10"></i></button></div>
+                            <input id="tCov" class="input-dark text-sm" placeholder="1.5 ק''ג למ''ר">
                         </div>
-
                         <div class="group">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-[11px] text-gray-500 font-medium">זמן ייבוש</span>
-                                <button onclick="smartSearch('drying')" class="text-gray-600 hover:text-white transition bg-gray-800 p-1 rounded hover:bg-blue-600" title="חפש נתוני ייבוש בגוגל">
-                                    <i data-lucide="search" size="10"></i>
-                                </button>
-                            </div>
-                            <input id="tDry" class="input-dark text-sm border-gray-800 focus:border-blue-500" placeholder="24 שעות">
+                            <div class="flex justify-between items-center mb-1.5"><span class="text-[11px] text-gray-500">ייבוש</span><button onclick="smartSearch('drying')" class="text-gray-600 hover:text-white"><i data-lucide="search" size="10"></i></button></div>
+                            <input id="tDry" class="input-dark text-sm" placeholder="24 שעות">
                         </div>
-
                         <div class="group">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-[11px] text-gray-500 font-medium">עובי יישום</span>
-                                <button onclick="smartSearch('thickness')" class="text-gray-600 hover:text-white transition bg-gray-800 p-1 rounded hover:bg-blue-600" title="חפש נתוני עובי בגוגל">
-                                    <i data-lucide="search" size="10"></i>
-                                </button>
-                            </div>
-                            <input id="tThick" class="input-dark text-sm border-gray-800 focus:border-blue-500" placeholder="2-5 מ''מ">
+                            <div class="flex justify-between items-center mb-1.5"><span class="text-[11px] text-gray-500">עובי</span><button onclick="smartSearch('thickness')" class="text-gray-600 hover:text-white"><i data-lucide="search" size="10"></i></button></div>
+                            <input id="tThick" class="input-dark text-sm" placeholder="2-5 מ''מ">
                         </div>
-                    </div>
-                    
-                    <div class="mt-4 pt-4 border-t border-gray-800 text-center">
-                        <button onclick="smartSearch('pdf')" class="text-xs text-gray-500 hover:text-white flex items-center justify-center gap-1 w-full transition">
-                            <i data-lucide="file-text" size="12"></i> חפש דף מוצר מקורי (PDF Technical Data Sheet)
-                        </button>
                     </div>
                 </div>
 
-                <button onclick="saveProduct()" class="w-full bg-gradient-to-r from-[#E3000F] to-red-700 hover:from-red-600 hover:to-red-800 text-white py-4 rounded-xl font-bold text-xl shadow-lg transform transition hover:scale-[1.01] flex justify-center gap-2 items-center">
+                <button onclick="saveProduct()" class="w-full bg-gradient-to-r from-[#E3000F] to-red-700 hover:from-red-600 hover:to-red-800 text-white py-4 rounded-xl font-bold text-xl shadow-lg flex justify-center gap-2 items-center">
                     <i data-lucide="save"></i> שמור מוצר
                 </button>
             </div>
 
             <div class="w-1/3 min-w-[320px]">
-                <div class="sticky top-6 bg-white text-black rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-gray-900 flex flex-col h-[750px]">
+                <div class="sticky top-6 bg-white text-black rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-gray-900 flex flex-col h-[750px] relative">
                     <div class="h-[40%] bg-gray-100 flex items-center justify-center relative p-6 border-b border-gray-100">
-                        <img id="previewImg" src="https://placehold.co/400?text=Sika" class="max-h-full max-w-full object-contain mix-blend-multiply transition-all duration-500">
-                        <div id="videoBadge" class="absolute bottom-4 right-4 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md hidden flex items-center gap-1">
-                            <i data-lucide="youtube" size="12"></i> VIDEO
-                        </div>
+                        <img id="previewImg" src="https://placehold.co/400?text=Sika" class="max-h-full max-w-full object-contain mix-blend-multiply">
                     </div>
-                    
                     <div class="p-6 flex-1 flex flex-col overflow-y-auto">
                         <div id="prevBrand" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">BRAND</div>
                         <h2 id="prevName" class="text-3xl font-black leading-none mb-3 text-gray-900">שם המוצר</h2>
-                        
-                        <div class="flex gap-1 mb-4">
-                            <div class="h-1 w-8 bg-[#E3000F] rounded-full"></div>
-                            <div class="h-1 w-2 bg-gray-300 rounded-full"></div>
-                        </div>
-
-                        <p id="prevDesc" class="text-sm text-gray-600 leading-relaxed mb-6">תיאור המוצר יופיע כאן בזמן אמת...</p>
-                        
+                        <div class="flex gap-1 mb-4"><div class="h-1 w-8 bg-[#E3000F] rounded-full"></div></div>
+                        <p id="prevDesc" class="text-sm text-gray-600 leading-relaxed mb-6">תיאור...</p>
                         <div class="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-2 mb-4">
-                            <div class="text-center">
-                                <div class="text-[9px] text-gray-400 uppercase font-bold">כיסוי</div>
-                                <div id="prevCov" class="font-bold text-xs text-gray-800 mt-1">-</div>
-                            </div>
-                            <div class="text-center border-r border-gray-200 border-l">
-                                <div class="text-[9px] text-gray-400 uppercase font-bold">ייבוש</div>
-                                <div id="prevDry" class="font-bold text-xs text-gray-800 mt-1">-</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-[9px] text-gray-400 uppercase font-bold">עובי</div>
-                                <div id="prevThick" class="font-bold text-xs text-gray-800 mt-1">-</div>
-                            </div>
+                            <div class="text-center"><div class="text-[9px] text-gray-400 font-bold">כיסוי</div><div id="prevCov" class="font-bold text-xs">-</div></div>
+                            <div class="text-center border-r border-l border-gray-200"><div class="text-[9px] text-gray-400 font-bold">ייבוש</div><div id="prevDry" class="font-bold text-xs">-</div></div>
+                            <div class="text-center"><div class="text-[9px] text-gray-400 font-bold">עובי</div><div id="prevThick" class="font-bold text-xs">-</div></div>
                         </div>
+                    </div>
 
-                        <div id="previewVideoContainer" class="hidden mt-auto">
-                            <p class="text-[10px] font-bold text-gray-400 mb-2 uppercase">מדריך וידאו</p>
-                            <iframe id="previewIframe" class="w-full aspect-video rounded-xl bg-black shadow-lg" frameborder="0" allowfullscreen></iframe>
-                        </div>
+                    <div id="qrOverlay" class="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center hidden p-8 text-center animate-fade-in">
+                        <h3 class="text-2xl font-black text-black mb-4">סרוק אותי</h3>
+                        <img id="qrImage" src="" class="w-64 h-64 border-4 border-black rounded-xl mb-4">
+                        <p class="text-gray-500 text-sm mb-6">קוד זה מפנה לדף המוצר באפליקציה</p>
+                        <button onclick="document.getElementById('qrOverlay').classList.add('hidden')" class="bg-gray-200 text-black px-6 py-2 rounded-full font-bold">סגור</button>
                     </div>
                 </div>
             </div>
@@ -213,17 +162,77 @@
     <script type="module">
         import { db } from '../js/firebase-config.js';
         import { collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { searchProductImages, searchYouTubeVideos, askGeminiAdmin, extractTechnicalSpecs } from '../js/gemini-service.js';
+        import { searchProductImages, searchYouTubeVideos, askGeminiAdmin, extractTechnicalSpecs, improveText } from '../js/gemini-service.js';
 
         lucide.createIcons();
         let allProducts = [];
 
-        // --- 1. Master Search (Text, Image, Video) ---
+        // --- NEW FEATURES LOGIC --- //
+
+        // 1. AI Rewriter
+        window.rewrite = async (style) => {
+            const currentDesc = document.getElementById('pDesc').value;
+            if(!currentDesc) return alert("כתוב משהו בתיאור קודם!");
+            
+            const originalBtn = event.currentTarget.innerHTML;
+            event.currentTarget.innerHTML = "⏳...";
+            
+            const newText = await improveText(currentDesc, style);
+            document.getElementById('pDesc').value = newText;
+            updatePreview();
+            
+            event.currentTarget.innerHTML = originalBtn;
+        }
+
+        // 2. Duplicate Product
+        window.duplicateProduct = () => {
+            const id = document.getElementById('editId').value;
+            if(!id) return alert("בחר מוצר לשכפול קודם");
+            
+            // מנקה את ה-ID כדי שייווצר חדש
+            document.getElementById('editId').value = "";
+            document.getElementById('productIdDisplay').innerText = "ID: New (Copy)";
+            document.getElementById('pName').value += " (העתק)";
+            
+            // מנקה גרידים כדי לא לבלבל
+            document.getElementById('imageGrid').innerHTML = '<div class="col-span-5 text-center py-4 text-xs text-gray-500">העתק נוצר. בצע חיפוש לשינוי מדיה</div>';
+            document.getElementById('videoGrid').innerHTML = '';
+            
+            alert("המוצר שוכפל! ערוך את הפרטים ולחץ על שמור ליצירת מוצר חדש.");
+        }
+
+        // 3. QR Generator
+        window.generateQR = () => {
+            const name = document.getElementById('pName').value;
+            if(!name) return;
+            
+            // יצירת URL מדומה (בפועל זה יהיה הלינק לאפליקציה שלך עם ?id=...)
+            const appLink = `https://saban942025-cyber.github.io/kiosk/mobile.html?product=${encodeURIComponent(name)}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(appLink)}`;
+            
+            document.getElementById('qrImage').src = qrUrl;
+            document.getElementById('qrOverlay').classList.remove('hidden');
+        }
+
+        // 4. WhatsApp Share
+        window.shareWhatsApp = () => {
+            const name = document.getElementById('pName').value;
+            const desc = document.getElementById('pDesc').value;
+            const img = document.getElementById('pImg').value;
+            
+            if(!name) return;
+            
+            const text = `*היי, הנה פרטים על ${name} מסיקה-Ai:*\n\n${desc}\n\nתמונה: ${img}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // --- CORE FUNCTIONS (Existing) --- //
+        
         window.runAllSearches = async () => {
             const query = document.getElementById('searchQuery').value;
-            if(!query) return alert("נא להזין שם מוצר");
+            if(!query) return;
 
-            // AI Text Fill (if empty)
+            // AI Fill
             if(!document.getElementById('pName').value) {
                 document.getElementById('pName').value = query;
                 askGeminiAdmin(query).then(data => {
@@ -235,19 +244,14 @@
                 });
             }
 
-            // Media Search
+            // Media
             const imgGrid = document.getElementById('imageGrid');
             const vidGrid = document.getElementById('videoGrid');
-            
-            imgGrid.innerHTML = '<div class="col-span-5 text-center py-4"><i data-lucide="loader-2" class="animate-spin inline text-blue-500"></i> מחפש תמונות...</div>';
-            vidGrid.innerHTML = '<div class="col-span-4 text-center py-4"><i data-lucide="loader-2" class="animate-spin inline text-red-500"></i> מחפש וידאו...</div>';
+            imgGrid.innerHTML = '<i data-lucide="loader-2" class="animate-spin text-blue-500"></i>';
+            vidGrid.innerHTML = '<i data-lucide="loader-2" class="animate-spin text-red-500"></i>';
             lucide.createIcons();
 
-            const [images, videos] = await Promise.all([
-                searchProductImages(query),
-                searchYouTubeVideos(query)
-            ]);
-
+            const [images, videos] = await Promise.all([searchProductImages(query), searchYouTubeVideos(query)]);
             renderMedia(images, imgGrid, 'img');
             renderMedia(videos, vidGrid, 'vid');
             lucide.createIcons();
@@ -261,69 +265,45 @@
                 div.onclick = () => {
                     container.querySelectorAll('.media-card').forEach(c => c.classList.remove('selected'));
                     div.classList.add('selected');
-                    
                     if(type === 'img') {
                         document.getElementById('pImg').value = item.link;
                         document.getElementById('previewImg').src = item.link;
                     } else {
                         document.getElementById('pVideo').value = item.embed;
-                        updateVideoPreview(item.embed);
                     }
                 };
                 div.innerHTML = `<img src="${type === 'img' ? item.link : item.thumbnail}" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition">`;
-                if(type === 'vid') div.innerHTML += '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play-circle" class="text-white drop-shadow-md" size="32"></i></div>';
+                if(type === 'vid') div.innerHTML += '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play-circle" class="text-white"></i></div>';
                 container.appendChild(div);
             });
         }
 
-        // --- 2. Tech Specs AI ---
         window.fillTechData = async () => {
             const name = document.getElementById('pName').value || document.getElementById('searchQuery').value;
             if(!name) return alert("חסר שם מוצר");
             
             const btn = event.currentTarget;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> מעבד...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i>';
             lucide.createIcons();
 
             const data = await extractTechnicalSpecs(name);
-            document.getElementById('tCov').value = data.coverage || '';
-            document.getElementById('tDry').value = data.drying || '';
-            document.getElementById('tThick').value = data.thickness || '';
+            document.getElementById('tCov').value = data.coverage;
+            document.getElementById('tDry').value = data.drying;
+            document.getElementById('tThick').value = data.thickness;
             
-            btn.innerHTML = originalText;
+            btn.innerHTML = '<i data-lucide="sparkles"></i> מילוי אוטומטי';
+            lucide.createIcons();
             updatePreview();
         }
 
-        // --- 3. Smart Google Search ---
         window.smartSearch = (type) => {
             const name = document.getElementById('pName').value || document.getElementById('searchQuery').value;
-            if(!name) return alert("הזן שם מוצר קודם");
-
+            if(!name) return alert("הזן שם מוצר");
             let q = "";
-            if(type === 'coverage') q = `${name} consumption coverage kg m2 technical data sheet`;
-            if(type === 'drying') q = `${name} waiting time drying curing time technical data sheet`;
-            if(type === 'thickness') q = `${name} layer thickness application min max mm technical data sheet`;
-            if(type === 'pdf') q = `${name} Sika Technical Data Sheet pdf download`;
-
+            if(type === 'coverage') q = `${name} consumption coverage technical data sheet`;
+            if(type === 'drying') q = `${name} drying time curing technical data sheet`;
+            if(type === 'thickness') q = `${name} layer thickness technical data sheet`;
             window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
-        }
-
-        // --- Preview Logic ---
-        function updateVideoPreview(url) {
-            const container = document.getElementById('previewVideoContainer');
-            const badge = document.getElementById('videoBadge');
-            const iframe = document.getElementById('previewIframe');
-            
-            if(url) {
-                container.classList.remove('hidden');
-                badge.classList.remove('hidden');
-                iframe.src = url;
-            } else {
-                container.classList.add('hidden');
-                badge.classList.add('hidden');
-                iframe.src = "";
-            }
         }
 
         ['pName', 'pBrand', 'pDesc', 'tCov', 'tDry', 'tThick'].forEach(id => {
@@ -334,13 +314,12 @@
             document.getElementById('prevName').innerText = document.getElementById('pName').value || 'שם המוצר';
             document.getElementById('prevBrand').innerText = document.getElementById('pBrand').value || 'BRAND';
             document.getElementById('prevDesc').innerText = document.getElementById('pDesc').value || 'תיאור...';
-            
             document.getElementById('prevCov').innerText = document.getElementById('tCov').value || '-';
             document.getElementById('prevDry').innerText = document.getElementById('tDry').value || '-';
             document.getElementById('prevThick').innerText = document.getElementById('tThick').value || '-';
         }
 
-        // --- Firebase Logic ---
+        // Firebase Inventory
         async function loadInventory() {
             const list = document.getElementById('inventoryList');
             list.innerHTML = '<div class="text-center py-4"><i data-lucide="loader-2" class="animate-spin text-gray-500"></i></div>';
@@ -360,18 +339,16 @@
                                 <div class="text-xs font-bold text-gray-300 group-hover:text-white truncate">${p.name}</div>
                                 <div class="text-[10px] text-gray-500">${p.brand || ''}</div>
                             </div>
-                            ${p.videoUrl ? '<i data-lucide="video" size="12" class="text-red-500 ml-auto"></i>' : ''}
                         </div>`;
                 });
-                lucide.createIcons();
-            } catch(e) { console.error("Firebase Error", e); }
+            } catch(e) { console.error(e); }
         }
 
         window.loadProduct = (id) => {
             const p = allProducts.find(x => x.id === id);
             if(!p) return;
-            
             document.getElementById('editId').value = id;
+            document.getElementById('productIdDisplay').innerText = `ID: ${id.slice(0,6)}...`;
             document.getElementById('searchQuery').value = p.name;
             document.getElementById('pName').value = p.name;
             document.getElementById('pBrand').value = p.brand;
@@ -384,12 +361,11 @@
             document.getElementById('tThick').value = p.tech?.thickness || '';
 
             document.getElementById('previewImg').src = p.image || 'https://placehold.co/400';
-            updateVideoPreview(p.videoUrl);
             updatePreview();
-
-            // Clear media grids
+            
+            // Clear grids
             document.getElementById('imageGrid').innerHTML = '<div class="col-span-5 text-center text-gray-600 text-xs py-4">חפש מחדש לשינוי תמונה</div>';
-            document.getElementById('videoGrid').innerHTML = '<div class="col-span-4 text-center text-gray-600 text-xs py-4">חפש מחדש לשינוי וידאו</div>';
+            document.getElementById('videoGrid').innerHTML = '';
         }
 
         window.saveProduct = async () => {
@@ -409,7 +385,7 @@
                 updatedAt: Date.now()
             };
 
-            if(!data.name) return alert("חובה למלא שם מוצר");
+            if(!data.name) return alert("חובה למלא שם");
 
             try {
                 if(id) await updateDoc(doc(db, "products", id), data);
@@ -424,9 +400,9 @@
 
         window.clearForm = () => {
             document.getElementById('editId').value = "";
+            document.getElementById('productIdDisplay').innerText = "ID: New";
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.getElementById('previewImg').src = "https://placehold.co/400?text=New";
-            updateVideoPreview("");
             updatePreview();
         }
 
