@@ -1,23 +1,24 @@
-// === Sika Power Pool ===
+// === Sika Key Pool ===
+// רשימת המפתחות המעודכנת שלך
 const API_KEYS_POOL = [
     "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
     "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
     "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
     "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
-    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0",
     "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
 
-// רשימת מודלים לפי סדר עדיפות (מהיציב לחדשני)
-const MODELS_PRIORITY = [
-    "gemini-1.5-flash",          // הכי מהיר ויציב
-    "gemini-1.5-flash-latest",   // גרסה עדכנית
-    "gemini-1.5-flash-001",      // גרסה ספציפית
-    "gemini-pro",                // המודל הקלאסי (תמיד עובד)
-    "gemini-2.0-flash-exp"       // הניסיוני (רק אם כל השאר נכשלו)
+// === Model Discovery List ===
+// הרשימה שהמערכת תבדוק אוטומטית עבור כל מפתח
+const MODELS_TO_TRY = [
+    "gemini-1.5-flash",       // המהיר והמומלץ כרגע
+    "gemini-1.5-pro",         // החכם ביותר
+    "gemini-1.0-pro",         // היציב והישן (בדרך כלל עובד כגיבוי)
+    "gemini-2.0-flash-exp"    // החדש ביותר (לפעמים לא יציב)
 ];
 
+// בריכות חיפוש תמונות
 const CX_POOL = [
     "3331a7d5c75e14f26",
     "635bc3eeee0194b16",
@@ -29,16 +30,16 @@ function getRandomItem(arr) {
 }
 
 /**
- * המוח החכם: מנסה שילובים של מפתחות ומודלים עד להצלחה
+ * המוח החכם: מגלה לבד איזה מודל עובד
  */
 export async function askGeminiAdmin(productName) {
     
-    // נסה 3 שילובים שונים לפני שאתה מוותר
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // נסה עד 3 מפתחות שונים לפני שאתה מוותר
+    for (let i = 0; i < 3; i++) {
         const currentKey = getRandomItem(API_KEYS_POOL);
         
-        // נסה לעבור על המודלים לפי הסדר עד שמישהו עונה
-        for (const model of MODELS_PRIORITY) {
+        // עבור כל מפתח, נסה למצוא מודל שעובד
+        for (const model of MODELS_TO_TRY) {
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
             
@@ -55,20 +56,16 @@ export async function askGeminiAdmin(productName) {
             }`;
 
             try {
-                // console.log(`Attempting: ${model} with key ...${currentKey.slice(-4)}`); // לדיבאג
-                
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
 
+                // אם קיבלנו שגיאה (404 = מודל לא קיים, 429 = עומס) - מדלגים למודל הבא
                 if (!response.ok) {
-                    // אם זה 429 (עומס) או 404 (מודל לא קיים) - נסה את המודל הבא ברשימה
-                    if (response.status === 429 || response.status === 404) {
-                        continue; 
-                    }
-                    throw new Error(response.statusText);
+                    // console.log(`Model ${model} failed on key ...${currentKey.slice(-4)} (${response.status})`);
+                    continue; 
                 }
 
                 const data = await response.json();
@@ -76,17 +73,15 @@ export async function askGeminiAdmin(productName) {
 
                 let text = data.candidates[0].content.parts[0].text;
                 text = text.replace(/```json|```/g, '').trim();
-                return JSON.parse(text); // הצלחה!
+                return JSON.parse(text); // הצלחה! מצאנו שילוב עובד.
 
             } catch (error) {
-                console.warn(`Failed on ${model}:`, error);
-                // ממשיך למודל הבא בלולאה
+                // שגיאת רשת - ממשיכים לנסות
             }
         }
-        // אם סיימנו את כל המודלים עם המפתח הזה ולא הצליח - נחליף מפתח בלולאה החיצונית (attempt)
     }
     
-    alert("כל המפתחות והמודלים עמוסים כרגע. נסה שוב בעוד דקה.");
+    alert("כל המפתחות עמוסים כרגע. נסה שוב בעוד דקה.");
     return null;
 }
 
@@ -110,9 +105,10 @@ export async function searchGoogleImages(query) {
 }
 
 export async function askProductExpert(product, userQuestion) {
-    // בשיחה עם המומחה נשתמש במודל הכי יציב (gemini-pro)
     const currentKey = getRandomItem(API_KEYS_POOL);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${currentKey}`;
+    // לשיחה נשתמש במודל הכי יציב ברשימה באופן ישיר
+    const stableModel = "gemini-1.5-flash"; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${stableModel}:generateContent?key=${currentKey}`;
     
     const context = `
     אתה "Sika-Ai".
