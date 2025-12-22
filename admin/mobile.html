@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Sika Mobile App</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Heebo', sans-serif; background: #0f172a; color: white; -webkit-tap-highlight-color: transparent; }
+        
+        /* Accordion Styles */
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #1e293b; }
+        .accordion-header.active .icon { transform: rotate(180deg); }
+        .accordion-header.active { background: #334155; color: #E3000F; }
+        
+        /* Mobile Input */
+        .mobile-input { width: 100%; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; font-size: 16px; margin-bottom: 10px; color: white; }
+        .mobile-input:focus { border-color: #E3000F; outline: none; }
+        
+        /* Horizontal Scroll for Media */
+        .scrolling-wrapper { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; -webkit-overflow-scrolling: touch; }
+        .media-item { flex: 0 0 120px; height: 80px; border-radius: 8px; overflow: hidden; position: relative; border: 2px solid transparent; }
+        .media-item.selected { border-color: #E3000F; }
+        .media-item img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Drawer */
+        #drawer { transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+        #drawer.open { transform: translateX(0); }
+        
+        /* Floating Action Bar */
+        .fab-bar { position: fixed; bottom: 20px; left: 20px; right: 20px; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 10px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; z-index: 50; }
+        .fab-btn { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #94a3b8; gap: 2px; }
+        .fab-btn.active { color: #E3000F; }
+        .fab-main { background: #E3000F; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: translateY(-20px); box-shadow: 0 5px 15px rgba(227, 0, 15, 0.4); border: 4px solid #0f172a; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <header class="fixed top-0 w-full bg-[#0f172a]/90 backdrop-blur-md z-40 border-b border-gray-800 p-4 flex justify-between items-center">
+        <button onclick="toggleDrawer()" class="p-2"><i data-lucide="menu"></i></button>
+        <h1 class="text-xl font-black text-[#E3000F] tracking-tighter italic">SIKA MOBILE</h1>
+        <button onclick="togglePreviewMode()" class="p-2 text-blue-400 relative">
+            <i data-lucide="eye"></i>
+            <span id="previewIndicator" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+        </button>
+    </header>
+
+    <div id="drawer" class="fixed inset-y-0 right-0 w-64 bg-gray-900 z-50 shadow-2xl border-l border-gray-800 pt-20 px-4">
+        <button onclick="toggleDrawer()" class="absolute top-4 left-4"><i data-lucide="x"></i></button>
+        <div class="space-y-4">
+            <button onclick="showView('list')" class="w-full text-right p-3 rounded hover:bg-gray-800 flex gap-3 items-center font-bold"><i data-lucide="package"></i> ניהול מלאי</button>
+            <button onclick="createNew()" class="w-full text-right p-3 rounded hover:bg-gray-800 flex gap-3 items-center font-bold text-blue-400"><i data-lucide="plus-circle"></i> מוצר חדש</button>
+            <div class="h-px bg-gray-800 my-4"></div>
+            <button class="w-full text-right p-3 rounded hover:bg-gray-800 flex gap-3 items-center text-gray-500"><i data-lucide="settings"></i> הגדרות</button>
+        </div>
+    </div>
+
+    <div id="listView" class="pt-20 px-4">
+        <div class="mb-4 relative">
+            <i data-lucide="search" class="absolute right-3 top-3 text-gray-500 w-5"></i>
+            <input type="text" id="listSearch" oninput="filterList()" placeholder="חפש במלאי..." class="mobile-input pr-10">
+        </div>
+        <div id="productsContainer" class="grid grid-cols-1 gap-3">
+            </div>
+    </div>
+
+    <div id="editorView" class="pt-20 px-4 hidden">
+        <input type="hidden" id="editId">
+        
+        <div class="flex gap-2 mb-6">
+            <input id="aiSearch" class="mobile-input mb-0 font-bold" placeholder="שם מוצר (למשל Sika 107)">
+            <button onclick="runMagic()" class="bg-blue-600 rounded-lg w-14 flex items-center justify-center text-white shadow-lg">
+                <i data-lucide="sparkles"></i>
+            </button>
+        </div>
+
+        <div class="mb-3 rounded-lg overflow-hidden border border-gray-700">
+            <button onclick="toggleAccordion('acc1')" class="accordion-header w-full p-4 bg-gray-800 flex justify-between items-center font-bold active">
+                <span>📝 פרטים כלליים</span>
+                <i data-lucide="chevron-down" class="icon w-4 h-4 transition-transform"></i>
+            </button>
+            <div id="acc1" class="accordion-content px-4 py-2" style="max-height: 1000px;"> <label class="text-xs text-gray-400">שם מוצר</label>
+                <input id="pName" class="mobile-input">
+                
+                <div class="flex gap-2">
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400">מותג</label>
+                        <input id="pBrand" class="mobile-input">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs text-gray-400">קטגוריה</label>
+                        <select id="pCat" class="mobile-input">
+                            <option value="sealing">איטום</option>
+                            <option value="glues">דבקים</option>
+                            <option value="flooring">ריצוף</option>
+                            <option value="concrete">בטון</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <label class="text-xs text-gray-400">תיאור שיווקי</label>
+                <textarea id="pDesc" class="mobile-input h-24" placeholder="תיאור..."></textarea>
+            </div>
+        </div>
+
+        <div class="mb-3 rounded-lg overflow-hidden border border-gray-700">
+            <button onclick="toggleAccordion('acc2')" class="accordion-header w-full p-4 bg-gray-800 flex justify-between items-center font-bold">
+                <span>📸 מדיה (גוגל ויוטיוב)</span>
+                <i data-lucide="chevron-down" class="icon w-4 h-4 transition-transform"></i>
+            </button>
+            <div id="acc2" class="accordion-content px-4 py-2">
+                <p class="text-[10px] text-gray-500 mb-2">תמונות (גלול הצידה)</p>
+                <div id="imgScroll" class="scrolling-wrapper">
+                    <div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>
+                </div>
+                <input id="pImg" type="hidden">
+
+                <p class="text-[10px] text-gray-500 mt-4 mb-2">וידאו (גלול הצידה)</p>
+                <div id="vidScroll" class="scrolling-wrapper">
+                    <div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>
+                </div>
+                <input id="pVideo" type="hidden">
+            </div>
+        </div>
+
+        <div class="mb-24 rounded-lg overflow-hidden border border-gray-700">
+            <button onclick="toggleAccordion('acc3')" class="accordion-header w-full p-4 bg-gray-800 flex justify-between items-center font-bold">
+                <span>📐 מפרט טכני</span>
+                <i data-lucide="chevron-down" class="icon w-4 h-4 transition-transform"></i>
+            </button>
+            <div id="acc3" class="accordion-content px-4 py-2">
+                <div class="flex gap-2 items-end mb-2">
+                    <button onclick="autoTech()" class="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded w-full border border-blue-700">🤖 מילוי אוטומטי (AI)</button>
+                </div>
+                <label class="text-xs text-gray-400">כיסוי</label>
+                <input id="tCov" class="mobile-input">
+                <label class="text-xs text-gray-400">ייבוש</label>
+                <input id="tDry" class="mobile-input">
+                <label class="text-xs text-gray-400">עובי</label>
+                <input id="tThick" class="mobile-input">
+            </div>
+        </div>
+    </div>
+
+    <div id="previewModal" class="fixed inset-0 bg-white z-[60] hidden overflow-y-auto">
+        <button onclick="togglePreviewMode()" class="fixed top-4 left-4 bg-black/50 text-white p-2 rounded-full z-50"><i data-lucide="x"></i></button>
+        
+        <div class="relative h-64 bg-gray-100 flex items-center justify-center">
+            <img id="prevImg" src="" class="max-h-full max-w-full object-contain mix-blend-multiply">
+            <div id="prevVideoBadge" class="absolute bottom-4 right-4 bg-red-600 text-white text-xs px-2 py-1 rounded font-bold hidden">VIDEO</div>
+        </div>
+        
+        <div class="p-6 text-black">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1" id="prevBrand">BRAND</div>
+            <h1 class="text-3xl font-black leading-none mb-4" id="prevName">שם מוצר</h1>
+            <p class="text-gray-600 leading-relaxed mb-6" id="prevDesc">תיאור...</p>
+            
+            <div class="bg-gray-50 p-4 rounded-xl grid grid-cols-3 gap-2 mb-6">
+                <div class="text-center"><div class="text-[10px] text-gray-400">כיסוי</div><div id="prevCov" class="font-bold text-sm">-</div></div>
+                <div class="text-center border-r border-l border-gray-200"><div class="text-[10px] text-gray-400">ייבוש</div><div id="prevDry" class="font-bold text-sm">-</div></div>
+                <div class="text-center"><div class="text-[10px] text-gray-400">עובי</div><div id="prevThick" class="font-bold text-sm">-</div></div>
+            </div>
+
+            <div id="prevVideoContainer" class="hidden">
+                <iframe id="prevIframe" class="w-full aspect-video rounded-xl bg-black" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="fab-bar">
+        <button onclick="showView('list')" class="fab-btn" id="nav-list">
+            <i data-lucide="list"></i>
+            <span>רשימה</span>
+        </button>
+        
+        <button onclick="saveProduct()" class="fab-main">
+            <i data-lucide="save"></i>
+        </button>
+        
+        <button onclick="showView('editor')" class="fab-btn active" id="nav-edit">
+            <i data-lucide="edit-3"></i>
+            <span>עריכה</span>
+        </button>
+    </div>
+
+    <script type="module" src="js/mobile-app.js"></script>
+</body>
+</html>
