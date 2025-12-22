@@ -1,4 +1,4 @@
-// === Sika Key Pool ===
+// === Sika Power Pool ===
 const API_KEYS_POOL = [
     "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
@@ -9,15 +9,20 @@ const API_KEYS_POOL = [
     "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
 
-// רשימת מודלים מורחבת - מנסה את כולם עד שאחד עובד
-const MODELS_TO_TRY = [
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-    "gemini-1.0-pro",
-    "gemini-pro",
-    "gemini-2.0-flash-exp"
+// כתובות API שונות לניסוי (אם אחת נופלת, השניה תעבוד)
+const BASE_URLS = [
+    "https://generativelanguage.googleapis.com/v1beta/models/",
+    "https://generativelanguage.googleapis.com/v1/models/" 
 ];
 
+// מודלים לבדיקה (מהבטוח לחדש)
+const MODELS = [
+    "gemini-pro",
+    "gemini-1.5-flash",
+    "gemini-1.0-pro"
+];
+
+// בריכות חיפוש תמונות
 const CX_POOL = [
     "3331a7d5c75e14f26",
     "635bc3eeee0194b16",
@@ -29,57 +34,55 @@ function getRandomItem(arr) {
 }
 
 /**
- * המוח המרכזי: יצירת תוכן
+ * המוח החכם: מנגנון שרידות אולטימטיבי
  */
 export async function askGeminiAdmin(productName) {
     
-    // מנסה עד 3 מפתחות שונים
-    for (let k = 0; k < 3; k++) {
+    // לולאה שמנסה 5 שילובים שונים
+    for (let i = 0; i < 5; i++) {
         const currentKey = getRandomItem(API_KEYS_POOL);
+        const currentModel = MODELS[i % MODELS.length]; 
+        const currentBaseUrl = BASE_URLS[i % BASE_URLS.length]; // מנסה גם v1 וגם v1beta
         
-        // עבור כל מפתח, מנסה את כל המודלים האפשריים
-        for (const model of MODELS_TO_TRY) {
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
-            
-            const prompt = `
-            תפקידך: מנהל שיווק ומומחה טכני של "Sika-Ai".
-            מוצר: "${productName}"
-            החזר JSON בלבד (ללא Markdown) בעברית:
-            {
-                "name": "שם מוצר מלא",
-                "brand": "שם המותג",
-                "marketingDesc": "תיאור שיווקי קצר ומקצועי (עד 25 מילים)",
-                "category": "קטגוריה (sealing, glues, flooring, concrete, paint, tools)",
-                "tech": { "coverage": "כיסוי", "drying": "ייבוש", "thickness": "עובי" }
-            }`;
+        const url = `${currentBaseUrl}${currentModel}:generateContent?key=${currentKey}`;
+        
+        const prompt = `
+        You are a marketing expert for a construction store.
+        Product: "${productName}"
+        Return ONLY valid JSON (no markdown):
+        {
+            "name": "Full product name (Hebrew)",
+            "brand": "Brand name",
+            "marketingDesc": "Short sales pitch (Hebrew)",
+            "category": "sealing OR glues OR flooring OR concrete",
+            "tech": { "coverage": "X kg/m2", "drying": "X hours", "thickness": "X mm" }
+        }`;
 
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
 
-                if (!response.ok) {
-                    // אם נכשל, מדלג למודל הבא בשקט
-                    continue; 
-                }
-
-                const data = await response.json();
-                if (!data.candidates || !data.candidates[0]) continue;
-
-                let text = data.candidates[0].content.parts[0].text;
-                text = text.replace(/```json|```/g, '').trim();
-                return JSON.parse(text); // הצלחה!
-
-            } catch (error) {
-                // שגיאת רשת - נסה את הבא
+            if (!response.ok) {
+                // console.warn(`Failed: ${currentModel} on ${currentBaseUrl} (${response.status})`);
+                continue; 
             }
+
+            const data = await response.json();
+            if (!data.candidates || !data.candidates[0]) continue;
+
+            let text = data.candidates[0].content.parts[0].text;
+            text = text.replace(/```json|```/g, '').trim();
+            return JSON.parse(text); // הצלחה!
+
+        } catch (error) {
+            console.error("Network Error:", error);
         }
     }
     
-    alert("כל המפתחות עמוסים כרגע. נסה שוב בעוד דקה.");
+    alert("שגיאת התחברות ל-AI. נסה שוב (כל המפתחות נכשלו).");
     return null;
 }
 
@@ -100,42 +103,37 @@ export async function searchGoogleImages(query) {
             const data = await response.json();
             if (data.items) return data.items.map(item => item.link);
             
-        } catch (error) { console.error(error); }
+        } catch (error) { }
     }
     return [];
 }
 
 /**
- * המומחה בצ'אט
+ * מומחה צ'אט
  */
 export async function askProductExpert(product, userQuestion) {
-    // בשיחה עם המומחה ננסה גם כמה מודלים
-    const chatModels = ["gemini-1.5-flash", "gemini-pro"];
+    const currentKey = getRandomItem(API_KEYS_POOL);
+    // ננסה את המודל הכי בסיסי
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${currentKey}`;
     
-    for (const model of chatModels) {
-        const currentKey = getRandomItem(API_KEYS_POOL);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
-        
-        const context = `
-        אתה "Sika-Ai".
-        מוצר: ${product.name}
-        תיאור: ${product.marketingDesc}
-        טכני: ${JSON.stringify(product.tech)}
-        שאלה: "${userQuestion}"
-        ענה בעברית, קצר ולעניין.`;
+    const context = `
+    Product: ${product.name}
+    Tech: ${JSON.stringify(product.tech)}
+    User Question: "${userQuestion}"
+    Answer in Hebrew, short and professional.`;
 
-        try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
-            });
-            
-            if(!response.ok) continue;
-            
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        } catch (e) { }
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
+        });
+        
+        if(!response.ok) return "מצטער, יש לי בעיה בתקשורת כרגע.";
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (e) {
+        return "תקלה זמנית, נסה שוב.";
     }
-    return "יש הפרעה בקליטה, נסה שוב.";
 }
