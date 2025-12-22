@@ -1,6 +1,6 @@
 // === Sika API Keys Pool ===
 const API_KEYS_POOL = [
-    "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", // ראשי
+    "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", 
     "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U", 
     "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
@@ -14,57 +14,31 @@ const CX_IDS = ["3331a7d5c75e14f26", "635bc3eeee0194b16", "1340c66f5e73a4076"];
 
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// --- 1. AI שיווקי: יצירת תיאור כללי ---
+// --- 1. שיווקי ---
 export async function askGeminiAdmin(productName) {
-    // שינוי קריטי: שימוש ב-gemini-pro היציב
     const MODEL = "gemini-pro"; 
-    
     for (const key of API_KEYS_POOL) {
-        // שינוי קריטי: כתובת v1beta שהיא הכי סלחנית
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
-        
-        const prompt = `
-        Product: "${productName}". 
-        Return JSON ONLY (Hebrew values): 
-        { 
-            "name": "${productName}", 
-            "brand": "Sika", 
-            "marketingDesc": "Short persuasive description (Hebrew)", 
-            "category": "sealing" 
-        }`;
-
+        const prompt = `Product: "${productName}". Return JSON ONLY (Hebrew): { "name": "${productName}", "brand": "Sika", "marketingDesc": "Short persuasive description", "category": "sealing" }`;
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-            
-            if (res.status === 404) {
-                console.warn(`Model not found with key ending in ...${key.slice(-4)}. Trying next.`);
-                continue;
-            }
-
             if (res.ok) {
                 const data = await res.json();
                 let text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
                 return JSON.parse(text);
             }
-        } catch (e) { console.warn("AI Marketing Error", e); }
+        } catch (e) {}
     }
     return null;
 }
 
-// --- 2. שכתוב תוכן (AI Copywriter) ---
+// --- 2. שכתוב ---
 export async function improveText(currentText, style) {
     const MODEL = "gemini-pro";
-
     for (const key of API_KEYS_POOL) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
-        
-        let instruction = "";
-        if (style === 'sales') instruction = "Make it persuasive and marketing-oriented (Hebrew).";
-        if (style === 'pro') instruction = "Make it professional and technical (Hebrew).";
-        if (style === 'short') instruction = "Summarize it (Hebrew).";
-
+        let instruction = style === 'sales' ? "Make it persuasive (Hebrew)" : "Make it technical (Hebrew)";
         const prompt = `Original: "${currentText}". Instruction: ${instruction}. Return ONLY new text.`;
-
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (res.ok) {
@@ -76,18 +50,12 @@ export async function improveText(currentText, style) {
     return currentText;
 }
 
-// --- 3. חילוץ טכני ---
+// --- 3. טכני ---
 export async function extractTechnicalSpecs(productName) {
     const MODEL = "gemini-pro";
-
     for (const key of API_KEYS_POOL) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
-        
-        const prompt = `
-        Act as engineer. Product: "${productName}".
-        Extract technical data. Return JSON (Hebrew values):
-        { "coverage": "Consumption", "drying": "Curing time", "thickness": "Layer thickness" }`;
-
+        const prompt = `Product: "${productName}". Extract technical data JSON (Hebrew): { "coverage": "val", "drying": "val", "thickness": "val" }`;
         try {
             const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             if (res.ok) {
@@ -100,7 +68,7 @@ export async function extractTechnicalSpecs(productName) {
     return { coverage: "", drying: "", thickness: "" };
 }
 
-// --- 4. מדיה (תמונות + וידאו) ---
+// --- 4. מדיה ---
 export async function searchProductImages(query) {
     for (const key of API_KEYS_POOL) {
         const cx = getRandom(CX_IDS);
@@ -136,4 +104,26 @@ export async function searchYouTubeVideos(query) {
     return [];
 }
 
-export async function askProductExpert(p, q) { return ""; }
+// --- 5. המומחה (הפונקציה החדשה!) 🤖 ---
+export async function askProductExpert(context, question) {
+    const MODEL = "gemini-pro";
+    for (const key of API_KEYS_POOL) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
+        
+        const prompt = `
+        You are "Sika-Ai", a construction expert.
+        Context: ${context}
+        User Question: "${question}"
+        
+        Answer shortly and professionally in Hebrew. If the question is not about construction, say you don't know.`;
+
+        try {
+            const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            if (res.ok) {
+                const data = await res.json();
+                return data.candidates[0].content.parts[0].text;
+            }
+        } catch (e) { console.error(e); }
+    }
+    return "מצטער, אני מתקשה להתחבר לשרת כרגע.";
+}
