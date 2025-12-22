@@ -1,6 +1,6 @@
 // === Sika Power Pool ===
 const API_KEYS_POOL = [
-    "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
+    "AIzaSyBL76DNiLPe5fgvNpryrr6_7YNnrFkdMug",
     "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
     "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
     "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
