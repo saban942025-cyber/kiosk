@@ -3,7 +3,7 @@ import { collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic
 import { askGeminiAdmin, searchProductImages, searchYouTubeVideos, extractTechnicalSpecs } from './gemini-service.js';
 
 // אתחול אייקונים
-lucide.createIcons();
+if (typeof lucide !== 'undefined') lucide.createIcons();
 
 let allProducts = [];
 let currentView = 'list';
@@ -25,7 +25,7 @@ window.showView = (viewName) => {
     if (viewName === 'list') {
         document.getElementById('listView').classList.remove('hidden');
         document.getElementById('nav-list').classList.add('active');
-        loadInventory(); // רענון
+        window.loadInventory(); // רענון
     } else {
         document.getElementById('editorView').classList.remove('hidden');
         document.getElementById('nav-edit').classList.add('active');
@@ -66,40 +66,47 @@ window.runMagic = async () => {
     if (!query) return alert("כתוב שם מוצר!");
 
     const btn = document.querySelector('button[onclick="runMagic()"]');
+    const originalContent = btn.innerHTML;
     btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i>';
     lucide.createIcons();
 
-    // 1. Text Data
-    if(!document.getElementById('pName').value) {
-        document.getElementById('pName').value = query;
-        askGeminiAdmin(query).then(data => {
-            if(data) {
-                document.getElementById('pName').value = data.name; // לפעמים ה-AI מדייק את השם
-                document.getElementById('pBrand').value = data.brand;
-                document.getElementById('pDesc').value = data.marketingDesc;
-                // פתיחת האקורדיון הראשון
-                const acc1 = document.getElementById('acc1');
-                acc1.style.maxHeight = acc1.scrollHeight + "px";
-            }
-        });
+    try {
+        // 1. Text Data
+        if(!document.getElementById('pName').value) {
+            document.getElementById('pName').value = query;
+            askGeminiAdmin(query).then(data => {
+                if(data) {
+                    document.getElementById('pName').value = data.name; 
+                    document.getElementById('pBrand').value = data.brand;
+                    document.getElementById('pDesc').value = data.marketingDesc;
+                    // פתיחת האקורדיון הראשון
+                    const acc1 = document.getElementById('acc1');
+                    acc1.style.maxHeight = acc1.scrollHeight + "px";
+                    acc1.previousElementSibling.classList.add('active');
+                }
+            });
+        }
+
+        // 2. Media (Images & Video)
+        const [images, videos] = await Promise.all([
+            searchProductImages(query),
+            searchYouTubeVideos(query)
+        ]);
+        
+        renderMediaScroll(images, 'imgScroll', 'img');
+        renderMediaScroll(videos, 'vidScroll', 'vid');
+        
+        // פתיחת אקורדיון מדיה
+        const acc2 = document.getElementById('acc2');
+        acc2.previousElementSibling.classList.add('active');
+        acc2.style.maxHeight = acc2.scrollHeight + "px";
+    } catch (e) {
+        console.error(e);
+        alert("שגיאה בחיפוש AI");
+    } finally {
+        btn.innerHTML = originalContent; // '<i data-lucide="sparkles"></i>';
+        lucide.createIcons();
     }
-
-    // 2. Media (Images & Video)
-    const [images, videos] = await Promise.all([
-        searchProductImages(query),
-        searchYouTubeVideos(query)
-    ]);
-    
-    renderMediaScroll(images, 'imgScroll', 'img');
-    renderMediaScroll(videos, 'vidScroll', 'vid');
-    
-    // פתיחת אקורדיון מדיה
-    const acc2 = document.getElementById('acc2');
-    acc2.previousElementSibling.classList.add('active');
-    acc2.style.maxHeight = acc2.scrollHeight + "px";
-
-    btn.innerHTML = '<i data-lucide="sparkles"></i>';
-    lucide.createIcons();
 }
 
 function renderMediaScroll(items, containerId, type) {
@@ -129,9 +136,10 @@ function renderMediaScroll(items, containerId, type) {
 // --- Auto Tech Specs ---
 window.autoTech = async () => {
     const name = document.getElementById('pName').value || document.getElementById('aiSearch').value;
-    if(!name) return;
+    if(!name) return alert("הכנס שם מוצר");
     
     const btn = event.currentTarget;
+    const originalText = btn.innerText;
     btn.innerText = "⏳ חושב...";
     
     const data = await extractTechnicalSpecs(name);
@@ -139,7 +147,7 @@ window.autoTech = async () => {
     document.getElementById('tDry').value = data.drying;
     document.getElementById('tThick').value = data.thickness;
     
-    btn.innerText = "🤖 מילוי אוטומטי (AI)";
+    btn.innerText = originalText;
 }
 
 // --- CRUD & Inventory ---
@@ -147,11 +155,10 @@ window.autoTech = async () => {
 window.createNew = () => {
     document.getElementById('editId').value = "";
     document.querySelectorAll('input, textarea').forEach(i => i.value = "");
-    document.getElementById('imgScroll').innerHTML = "";
-    document.getElementById('vidScroll').innerHTML = "";
+    document.getElementById('imgScroll').innerHTML = `<div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>`;
+    document.getElementById('vidScroll').innerHTML = `<div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>`;
     
-    showView('editor');
-    toggleDrawer(); // סגור תפריט
+    window.showView('editor');
 }
 
 window.saveProduct = async () => {
@@ -180,39 +187,52 @@ window.saveProduct = async () => {
             await addDoc(collection(db, "products"), data);
         }
         alert("נשמר בהצלחה! ✅");
-        showView('list');
+        window.showView('list');
     } catch(e) { alert("שגיאה: " + e.message); }
 }
 
-async function loadInventory() {
+window.loadInventory = async () => {
     const container = document.getElementById('productsContainer');
+    // אם האלמנט לא קיים (אולי בדף אחר), צא
+    if(!container) return;
+
     container.innerHTML = '<div class="text-center mt-10"><i data-lucide="loader-2" class="animate-spin inline"></i> טוען...</div>';
     lucide.createIcons();
 
-    const snap = await getDocs(collection(db, "products"));
-    allProducts = [];
-    container.innerHTML = "";
+    try {
+        const snap = await getDocs(collection(db, "products"));
+        allProducts = [];
+        container.innerHTML = "";
 
-    snap.forEach(docSnap => {
-        const p = {id: docSnap.id, ...docSnap.data()};
-        allProducts.push(p);
-        
-        container.innerHTML += `
-            <div onclick="editProduct('${p.id}')" class="bg-gray-800 p-3 rounded-xl border border-gray-700 flex gap-4 items-center active:bg-gray-700 transition">
-                <img src="${p.image || 'https://placehold.co/100'}" class="w-16 h-16 rounded-lg object-cover bg-white">
-                <div class="flex-1">
-                    <div class="text-[10px] text-gray-400 font-bold uppercase">${p.brand || ''}</div>
-                    <div class="font-bold text-lg leading-tight mb-1">${p.name}</div>
-                    <div class="flex gap-2">
-                        ${p.videoUrl ? '<i data-lucide="video" size="14" class="text-red-500"></i>' : ''}
-                        ${p.tech?.coverage ? '<i data-lucide="ruler" size="14" class="text-blue-500"></i>' : ''}
+        if (snap.empty) {
+            container.innerHTML = '<div class="text-center mt-10 text-gray-500">המלאי ריק. הוסף מוצר חדש!</div>';
+            return;
+        }
+
+        snap.forEach(docSnap => {
+            const p = {id: docSnap.id, ...docSnap.data()};
+            allProducts.push(p);
+            
+            container.innerHTML += `
+                <div onclick="editProduct('${p.id}')" class="bg-gray-800 p-3 rounded-xl border border-gray-700 flex gap-4 items-center active:bg-gray-700 transition">
+                    <img src="${p.image || 'https://placehold.co/100'}" class="w-16 h-16 rounded-lg object-cover bg-white">
+                    <div class="flex-1">
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">${p.brand || 'SIKA'}</div>
+                        <div class="font-bold text-lg leading-tight mb-1 text-white">${p.name}</div>
+                        <div class="flex gap-2">
+                            ${p.videoUrl ? '<i data-lucide="video" size="14" class="text-red-500"></i>' : ''}
+                            ${p.tech?.coverage ? '<i data-lucide="ruler" size="14" class="text-blue-500"></i>' : ''}
+                        </div>
                     </div>
+                    <i data-lucide="chevron-left" class="text-gray-600"></i>
                 </div>
-                <i data-lucide="chevron-left" class="text-gray-600"></i>
-            </div>
-        `;
-    });
-    lucide.createIcons();
+            `;
+        });
+        lucide.createIcons();
+    } catch (e) {
+        console.error("Error loading inventory:", e);
+        container.innerHTML = '<div class="text-center mt-10 text-red-500">שגיאה בטעינת נתונים</div>';
+    }
 }
 
 window.editProduct = (id) => {
@@ -233,17 +253,18 @@ window.editProduct = (id) => {
     document.getElementById('tThick').value = p.tech?.thickness || '';
 
     // הצגת המדיה שנבחרה
-    const imgScroll = document.getElementById('imgScroll');
-    imgScroll.innerHTML = `<div class="media-item selected"><img src="${p.image}"></div>`;
+    if(p.image) {
+        const imgScroll = document.getElementById('imgScroll');
+        imgScroll.innerHTML = `<div class="media-item selected"><img src="${p.image}"></div>`;
+    }
     
-    showView('editor');
+    window.showView('editor');
 }
 
 window.filterList = () => {
     const term = document.getElementById('listSearch').value.toLowerCase();
     const items = document.getElementById('productsContainer').children;
     
-    // סינון פשוט ברמת ה-DOM (או אפשר לסנן את המערך ולרנדר מחדש)
     Array.from(items).forEach(item => {
         const text = item.innerText.toLowerCase();
         item.style.display = text.includes(term) ? 'flex' : 'none';
@@ -273,4 +294,4 @@ function updatePreviewData() {
 }
 
 // טעינה ראשונית
-loadInventory();
+window.loadInventory();
