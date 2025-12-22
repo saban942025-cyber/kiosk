@@ -2,21 +2,16 @@ import { db } from './firebase-config.js';
 import { collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { askGeminiAdmin, searchProductImages, searchYouTubeVideos, extractTechnicalSpecs } from './gemini-service.js';
 
-// אתחול אייקונים
 if (typeof lucide !== 'undefined') lucide.createIcons();
 
 let allProducts = [];
 let currentView = 'list';
 
-// --- ניהול תצוגה (Navigation) ---
-
-window.toggleDrawer = () => {
-    document.getElementById('drawer').classList.toggle('open');
-}
+// --- Navigation ---
+window.toggleDrawer = () => document.getElementById('drawer').classList.toggle('open');
 
 window.showView = (viewName) => {
-    document.getElementById('drawer').classList.remove('open'); // סגור תפריט
-    
+    document.getElementById('drawer').classList.remove('open');
     document.getElementById('listView').classList.add('hidden');
     document.getElementById('editorView').classList.add('hidden');
     document.getElementById('nav-list').classList.remove('active');
@@ -25,7 +20,7 @@ window.showView = (viewName) => {
     if (viewName === 'list') {
         document.getElementById('listView').classList.remove('hidden');
         document.getElementById('nav-list').classList.add('active');
-        window.loadInventory(); // רענון
+        window.loadInventory();
     } else {
         document.getElementById('editorView').classList.remove('hidden');
         document.getElementById('nav-edit').classList.add('active');
@@ -35,43 +30,31 @@ window.showView = (viewName) => {
 
 window.togglePreviewMode = () => {
     const modal = document.getElementById('previewModal');
-    const isHidden = modal.classList.contains('hidden');
-    
-    if (isHidden) {
-        updatePreviewData(); // מלא נתונים לפני הצגה
+    if (modal.classList.contains('hidden')) {
+        updatePreviewData();
         modal.classList.remove('hidden');
     } else {
         modal.classList.add('hidden');
     }
 }
 
-// --- Accordion Logic ---
 window.toggleAccordion = (id) => {
     const content = document.getElementById(id);
     const header = content.previousElementSibling;
-    
-    // Toggle active classes
     header.classList.toggle('active');
-    
-    if (content.style.maxHeight) {
-        content.style.maxHeight = null;
-    } else {
-        content.style.maxHeight = content.scrollHeight + "px";
-    }
+    content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + "px";
 }
 
-// --- AI Magic 🪄 ---
+// --- AI & Logic ---
 window.runMagic = async () => {
     const query = document.getElementById('aiSearch').value;
     if (!query) return alert("כתוב שם מוצר!");
-
+    
     const btn = document.querySelector('button[onclick="runMagic()"]');
-    const originalContent = btn.innerHTML;
     btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i>';
     lucide.createIcons();
 
     try {
-        // 1. Text Data
         if(!document.getElementById('pName').value) {
             document.getElementById('pName').value = query;
             askGeminiAdmin(query).then(data => {
@@ -79,15 +62,17 @@ window.runMagic = async () => {
                     document.getElementById('pName').value = data.name; 
                     document.getElementById('pBrand').value = data.brand;
                     document.getElementById('pDesc').value = data.marketingDesc;
-                    // פתיחת האקורדיון הראשון
-                    const acc1 = document.getElementById('acc1');
-                    acc1.style.maxHeight = acc1.scrollHeight + "px";
-                    acc1.previousElementSibling.classList.add('active');
                 }
             });
         }
+        
+        // Auto Tech Specs
+        const techData = await extractTechnicalSpecs(query);
+        document.getElementById('tCov').value = techData.coverage;
+        document.getElementById('tDry').value = techData.drying;
+        document.getElementById('tThick').value = techData.thickness;
 
-        // 2. Media (Images & Video)
+        // Media
         const [images, videos] = await Promise.all([
             searchProductImages(query),
             searchYouTubeVideos(query)
@@ -96,71 +81,53 @@ window.runMagic = async () => {
         renderMediaScroll(images, 'imgScroll', 'img');
         renderMediaScroll(videos, 'vidScroll', 'vid');
         
-        // פתיחת אקורדיון מדיה
-        const acc2 = document.getElementById('acc2');
-        acc2.previousElementSibling.classList.add('active');
-        acc2.style.maxHeight = acc2.scrollHeight + "px";
-    } catch (e) {
-        console.error(e);
-        alert("שגיאה בחיפוש AI");
-    } finally {
-        btn.innerHTML = originalContent; // '<i data-lucide="sparkles"></i>';
+        // Open Accordions
+        ['acc1', 'acc2', 'acc3'].forEach(id => {
+            const el = document.getElementById(id);
+            el.style.maxHeight = el.scrollHeight + "px";
+            el.previousElementSibling.classList.add('active');
+        });
+
+    } catch (e) { console.error(e); } 
+    finally { 
+        btn.innerHTML = '<i data-lucide="sparkles"></i>';
         lucide.createIcons();
     }
+}
+
+window.autoTech = async () => {
+    const name = document.getElementById('pName').value || document.getElementById('aiSearch').value;
+    if(!name) return;
+    const btn = event.currentTarget;
+    btn.innerText = "⏳ מעבד נתונים...";
+    const data = await extractTechnicalSpecs(name);
+    document.getElementById('tCov').value = data.coverage;
+    document.getElementById('tDry').value = data.drying;
+    document.getElementById('tThick').value = data.thickness;
+    btn.innerHTML = `<i data-lucide="cpu" size="12"></i> נתונים חולצו!`;
+    lucide.createIcons();
 }
 
 function renderMediaScroll(items, containerId, type) {
     const container = document.getElementById(containerId);
     container.innerHTML = "";
-    
     items.forEach(item => {
         const div = document.createElement('div');
-        div.className = "media-item";
+        div.className = "media-item bg-black";
         div.onclick = () => {
             container.querySelectorAll('.media-item').forEach(c => c.classList.remove('selected'));
             div.classList.add('selected');
-            
-            if(type === 'img') {
-                document.getElementById('pImg').value = item.link;
-            } else {
-                document.getElementById('pVideo').value = item.embed;
-            }
+            if(type === 'img') document.getElementById('pImg').value = item.link;
+            else document.getElementById('pVideo').value = item.embed;
         };
-        
         const src = type === 'img' ? item.link : item.thumbnail;
-        div.innerHTML = `<img src="${src}">`;
+        div.innerHTML = `<img src="${src}" class="opacity-80 hover:opacity-100">`;
+        if(type==='vid') div.innerHTML += '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play-circle" class="text-white"></i></div>';
         container.appendChild(div);
     });
 }
 
-// --- Auto Tech Specs ---
-window.autoTech = async () => {
-    const name = document.getElementById('pName').value || document.getElementById('aiSearch').value;
-    if(!name) return alert("הכנס שם מוצר");
-    
-    const btn = event.currentTarget;
-    const originalText = btn.innerText;
-    btn.innerText = "⏳ חושב...";
-    
-    const data = await extractTechnicalSpecs(name);
-    document.getElementById('tCov').value = data.coverage;
-    document.getElementById('tDry').value = data.drying;
-    document.getElementById('tThick').value = data.thickness;
-    
-    btn.innerText = originalText;
-}
-
-// --- CRUD & Inventory ---
-
-window.createNew = () => {
-    document.getElementById('editId').value = "";
-    document.querySelectorAll('input, textarea').forEach(i => i.value = "");
-    document.getElementById('imgScroll').innerHTML = `<div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>`;
-    document.getElementById('vidScroll').innerHTML = `<div class="text-center text-xs text-gray-500 w-full py-4">לחץ על הקסם 🪄 לחיפוש</div>`;
-    
-    window.showView('editor');
-}
-
+// --- Firebase ---
 window.saveProduct = async () => {
     const id = document.getElementById('editId').value;
     const data = {
@@ -179,119 +146,119 @@ window.saveProduct = async () => {
     };
 
     if(!data.name) return alert("חובה למלא שם!");
-
+    
     try {
         if(id) await updateDoc(doc(db, "products", id), data);
-        else {
-            data.createdAt = Date.now();
-            await addDoc(collection(db, "products"), data);
-        }
-        alert("נשמר בהצלחה! ✅");
+        else { data.createdAt = Date.now(); await addDoc(collection(db, "products"), data); }
         window.showView('list');
     } catch(e) { alert("שגיאה: " + e.message); }
 }
 
 window.loadInventory = async () => {
     const container = document.getElementById('productsContainer');
-    // אם האלמנט לא קיים (אולי בדף אחר), צא
     if(!container) return;
-
-    container.innerHTML = '<div class="text-center mt-10"><i data-lucide="loader-2" class="animate-spin inline"></i> טוען...</div>';
+    container.innerHTML = '<div class="text-center mt-10"><i data-lucide="loader-2" class="animate-spin inline"></i> טוען קטלוג...</div>';
     lucide.createIcons();
 
     try {
         const snap = await getDocs(collection(db, "products"));
         allProducts = [];
         container.innerHTML = "";
-
-        if (snap.empty) {
-            container.innerHTML = '<div class="text-center mt-10 text-gray-500">המלאי ריק. הוסף מוצר חדש!</div>';
-            return;
-        }
-
+        
         snap.forEach(docSnap => {
             const p = {id: docSnap.id, ...docSnap.data()};
             allProducts.push(p);
             
+            // --- כרטיס המוצר המעודכן עם נתונים טכניים ---
             container.innerHTML += `
-                <div onclick="editProduct('${p.id}')" class="bg-gray-800 p-3 rounded-xl border border-gray-700 flex gap-4 items-center active:bg-gray-700 transition">
-                    <img src="${p.image || 'https://placehold.co/100'}" class="w-16 h-16 rounded-lg object-cover bg-white">
-                    <div class="flex-1">
-                        <div class="text-[10px] text-gray-400 font-bold uppercase">${p.brand || 'SIKA'}</div>
-                        <div class="font-bold text-lg leading-tight mb-1 text-white">${p.name}</div>
-                        <div class="flex gap-2">
-                            ${p.videoUrl ? '<i data-lucide="video" size="14" class="text-red-500"></i>' : ''}
-                            ${p.tech?.coverage ? '<i data-lucide="ruler" size="14" class="text-blue-500"></i>' : ''}
+                <div onclick="openProductPage('${p.id}')" class="bg-[#1e293b] rounded-2xl p-3 flex gap-4 border border-gray-700 shadow-lg active:scale-[0.98] transition cursor-pointer relative overflow-hidden">
+                    <div class="w-24 h-24 bg-white rounded-xl flex-shrink-0 p-1">
+                        <img src="${p.image || 'https://placehold.co/100'}" class="w-full h-full object-contain">
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col justify-between py-1">
+                        <div>
+                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">${p.brand || 'SIKA'}</div>
+                            <h3 class="font-bold text-lg text-white leading-tight mb-2">${p.name}</h3>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2 mt-auto">
+                            ${p.tech?.drying ? `<span class="spec-badge"><i data-lucide="clock" size="10" class="text-orange-400"></i> ${p.tech.drying}</span>` : ''}
+                            ${p.tech?.thickness ? `<span class="spec-badge"><i data-lucide="ruler" size="10" class="text-blue-400"></i> ${p.tech.thickness}</span>` : ''}
                         </div>
                     </div>
-                    <i data-lucide="chevron-left" class="text-gray-600"></i>
+                    
+                    <div class="absolute bottom-3 left-3 text-[#E3000F]">
+                        <i data-lucide="arrow-left" size="20"></i>
+                    </div>
                 </div>
             `;
         });
         lucide.createIcons();
-    } catch (e) {
-        console.error("Error loading inventory:", e);
-        container.innerHTML = '<div class="text-center mt-10 text-red-500">שגיאה בטעינת נתונים</div>';
-    }
+    } catch (e) { console.error(e); }
 }
 
-window.editProduct = (id) => {
+window.createNew = () => {
+    document.getElementById('editId').value = "";
+    document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+    document.getElementById('imgScroll').innerHTML = ""; 
+    document.getElementById('vidScroll').innerHTML = "";
+    window.showView('editor');
+}
+
+// פונקציה לפתיחת דף מוצר (מודל) לקריאה בלבד/עריכה
+window.openProductPage = (id) => {
     const p = allProducts.find(x => x.id === id);
     if(!p) return;
 
+    // מילוי הנתונים לעריכה (מאחורי הקלעים)
     document.getElementById('editId').value = id;
-    document.getElementById('aiSearch').value = p.name;
     document.getElementById('pName').value = p.name;
     document.getElementById('pBrand').value = p.brand;
     document.getElementById('pCat').value = p.category;
     document.getElementById('pDesc').value = p.marketingDesc;
     document.getElementById('pImg').value = p.image;
     document.getElementById('pVideo').value = p.videoUrl || '';
-    
     document.getElementById('tCov').value = p.tech?.coverage || '';
     document.getElementById('tDry').value = p.tech?.drying || '';
     document.getElementById('tThick').value = p.tech?.thickness || '';
 
-    // הצגת המדיה שנבחרה
-    if(p.image) {
-        const imgScroll = document.getElementById('imgScroll');
-        imgScroll.innerHTML = `<div class="media-item selected"><img src="${p.image}"></div>`;
-    }
-    
-    window.showView('editor');
+    // הצגה במודל תצוגה
+    updatePreviewData(); 
+    document.getElementById('previewModal').classList.remove('hidden');
 }
 
 window.filterList = () => {
     const term = document.getElementById('listSearch').value.toLowerCase();
     const items = document.getElementById('productsContainer').children;
-    
     Array.from(items).forEach(item => {
-        const text = item.innerText.toLowerCase();
-        item.style.display = text.includes(term) ? 'flex' : 'none';
+        item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';
     });
 }
 
 function updatePreviewData() {
     document.getElementById('prevName').innerText = document.getElementById('pName').value || 'שם המוצר';
     document.getElementById('prevBrand').innerText = document.getElementById('pBrand').value || 'BRAND';
-    document.getElementById('prevDesc').innerText = document.getElementById('pDesc').value || 'אין תיאור';
-    document.getElementById('prevImg').src = document.getElementById('pImg').value || 'https://placehold.co/400';
+    document.getElementById('prevDesc').innerText = document.getElementById('pDesc').value || 'אין תיאור זמין.';
     
+    // Tech
     document.getElementById('prevCov').innerText = document.getElementById('tCov').value || '-';
     document.getElementById('prevDry').innerText = document.getElementById('tDry').value || '-';
     document.getElementById('prevThick').innerText = document.getElementById('tThick').value || '-';
     
+    // Media Gallery Logic
+    const imgUrl = document.getElementById('pImg').value || 'https://placehold.co/400';
+    document.getElementById('prevImg').src = imgUrl;
+    
     const videoUrl = document.getElementById('pVideo').value;
-    const vidContainer = document.getElementById('prevVideoContainer');
+    const vidSlide = document.getElementById('videoSlide');
+    
     if(videoUrl) {
-        vidContainer.classList.remove('hidden');
+        vidSlide.classList.remove('hidden'); // הצג את הסלייד של הוידאו
         document.getElementById('prevIframe').src = videoUrl;
-        document.getElementById('prevVideoBadge').classList.remove('hidden');
     } else {
-        vidContainer.classList.add('hidden');
-        document.getElementById('prevVideoBadge').classList.add('hidden');
+        vidSlide.classList.add('hidden'); // הסתר אם אין וידאו
     }
 }
 
-// טעינה ראשונית
 window.loadInventory();
