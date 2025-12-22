@@ -1,130 +1,93 @@
-// === הגדרת המפתחות ===
-// 1. המפתח הראשי (של הפרויקט) - עדיפות ראשונה
-const MAIN_KEY = "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo";
-
-// 2. מפתח גיבוי (Golden Key) - למקרה שהראשון נופל
-const BACKUP_KEY = "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U";
-
-// מאגר המפתחות המלא (סדר חשיבות: ראשי -> גיבוי)
-const API_KEYS_POOL = [MAIN_KEY, BACKUP_KEY];
-
-const CX_IDS = [
-    "3331a7d5c75e14f26",
-    "635bc3eeee0194b16",
-    "1340c66f5e73a4076"
+// === רשימת המפתחות (ראשי + גיבויים) ===
+const API_KEYS_POOL = [
+    "AIzaSyDTdmqaOHerwTOpfe9qKSCP895CcIErOwo", // מפתח ראשי
+    "AIzaSyApfM5AjEPanHzafJi6GqbJlIQ_w-0X07U", // מפתח גיבוי 1
+    "AIzaSyCQibBA_sC1St4u8YKit-zCzvPKl6_YE4I",
+    "AIzaSyD2PehLHX2olQQavvHo2vjclOq7iSdiagI",
+    "AIzaSyAdfGVrmr90Mp9ZhNMItD81iaE8OipKwz0",
+    "AIzaSyDn2bU0mnmNpj26UeBZYAirLnXf-FtPgCg",
+    "AIzaSyD9plWwyTESFm24c_OTunf4mFAsAmfrgj0",
+    "AIzaSyA10opXSDanliHZtGTXtDfOiC_8VGGTwc0"
 ];
+
+const CX_IDS = ["3331a7d5c75e14f26", "635bc3eeee0194b16", "1340c66f5e73a4076"];
 
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 /**
- * 1. מוח AI: יצירת תיאורים
- * המערכת מנסה את המפתח הראשי, ורק אם נכשלת עוברת לגיבוי.
+ * 1. AI: יצירת תיאורים
  */
 export async function askGeminiAdmin(productName) {
-    
-    // לולאה שעוברת על המפתחות לפי הסדר (0 = ראשי, 1 = גיבוי)
     for (const key of API_KEYS_POOL) {
-        // משתמשים ב-Gemini 1.5 Flash (הכי מהיר ויעיל)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-        
-        const prompt = `
-        You are a construction marketing expert.
-        Product: "${productName}"
-        Return JSON ONLY (Hebrew values):
-        {
-            "name": "Full Name",
-            "brand": "Brand",
-            "marketingDesc": "Short sales pitch (Hebrew)",
-            "category": "sealing/glues/flooring/concrete",
-            "tech": { "coverage": "X kg/m2", "drying": "X hours", "thickness": "X mm" }
-        }`;
-
+        const prompt = `Product: "${productName}". Return JSON (Hebrew): { "name": "${productName}", "brand": "Brand", "marketingDesc": "Desc", "category": "sealing", "tech": { "coverage": "", "drying": "", "thickness": "" } }`;
         try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-
-            // אם נכשל (למשל 429 או 403), נדלג למפתח הבא בלולאה
-            if (!response.ok) {
-                console.warn(`Key ...${key.slice(-4)} failed. Switching to backup.`);
-                continue; 
+            const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            if (res.ok) {
+                const data = await res.json();
+                let text = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
+                return JSON.parse(text);
             }
-
-            const data = await response.json();
-            if (!data.candidates) continue;
-
-            let text = data.candidates[0].content.parts[0].text;
-            text = text.replace(/```json|```/g, '').trim();
-            return JSON.parse(text); // הצלחה!
-
-        } catch (error) {
-            console.error("Connection Error:", error);
-        }
+        } catch (e) {}
     }
-
-    // אם שני המפתחות נכשלו
-    return {
-        name: productName,
-        brand: "",
-        marketingDesc: "נא למלא ידנית (תקלה בחיבור ל-AI)",
-        category: "sealing",
-        tech: { coverage: "", drying: "", thickness: "" }
-    };
+    return { name: productName, brand: "", marketingDesc: "מילוי ידני (AI לא זמין)", category: "sealing", tech: {} };
 }
 
 /**
- * 2. חיפוש תמונות
- * גם כאן - מנסים את הראשי, ואם לא עובד עוברים לגיבוי
+ * 2. תמונות: Google Custom Search
  */
 export async function searchProductImages(query) {
     for (const key of API_KEYS_POOL) {
-        // בחיפוש תמונות נבחר CX רנדומלי
         const cx = getRandom(CX_IDS);
-        
         const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${key}&searchType=image&num=6&imgSize=large`;
-
         try {
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                console.warn(`Image Search failed on key ...${key.slice(-4)}. Trying backup.`);
-                continue;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.items) return data.items.map(item => ({ link: item.link, title: item.title }));
             }
-
-            const data = await response.json();
-            if (data.items) return data.items.map(item => ({ link: item.link, title: item.title }));
-            
-        } catch (error) { }
+        } catch (e) {}
     }
-    
-    // Fallback אם הכל נכשל
+    // תמונות דמו במקרה של כשל
     return [
         { link: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Sika_AG_logo.svg/1200px-Sika_AG_logo.svg.png", title: "Sika Logo" },
-        { link: "https://placehold.co/600x400?text=Manual+Upload", title: "No Image" }
+        { link: "https://placehold.co/600x400?text=No+Image", title: "Placeholder" }
     ];
 }
 
 /**
- * 3. המומחה (צ'אט)
+ * 3. וידאו: YouTube Search (חדש!) 🎥
  */
-export async function askProductExpert(product, question) {
-    const key = API_KEYS_POOL[0]; // לצ'אט ננסה רק את הראשי כדי לחסוך קריאות
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+export async function searchYouTubeVideos(query) {
+    const q = query + " application tutorial"; // מוסיף מילות מפתח כדי למצוא סרטוני יישום
     
-    const context = `Product: ${product.name}. Tech: ${JSON.stringify(product.tech)}. Q: "${question}". Answer in Hebrew.`;
+    for (const key of API_KEYS_POOL) {
+        // maxResults=4 -> חוסך מכסה (YouTube API יקר)
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(q)}&key=${key}&maxResults=4`;
+        
+        try {
+            const res = await fetch(url);
+            
+            if (res.status === 403) {
+                console.warn(`YouTube API not enabled for key ...${key.slice(-4)}`);
+                continue;
+            }
 
-    try {
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: context }] }] })
-        });
-        if(res.ok) {
-            const data = await res.json();
-            return data.candidates[0].content.parts[0].text;
-        }
-    } catch (e) {}
-    return "המומחה אינו זמין כרגע.";
+            if (res.ok) {
+                const data = await res.json();
+                if (data.items) {
+                    return data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        thumbnail: item.snippet.thumbnails.high.url,
+                        link: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+                        embed: `https://www.youtube.com/embed/${item.id.videoId}`
+                    }));
+                }
+            }
+        } catch (e) { console.error("YouTube Error", e); }
+    }
+    return []; // החזר רשימה ריקה אם נכשל
 }
+
+export async function askProductExpert(product, question) { return "המומחה נח כרגע."; }
